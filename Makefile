@@ -6,4 +6,3 @@ default:
 	$(CC) *.h server.c -o ./bin/server
 	$(CC) *.h client.c -o ./bin/client
 
-#batatas
