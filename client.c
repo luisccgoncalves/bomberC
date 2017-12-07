@@ -5,7 +5,14 @@
 
 int main(int argc, char** argv) {
 
-    printf("Hello world!\n");
+    user newUser;
+    running=1;
+
+    printf("bomberC\nPlease login.\n");
+    while(running){
+        printf("user:");
+        scanf(" %[^\n]s");
+    }
 
     return (EXIT_SUCCESS);
 }
