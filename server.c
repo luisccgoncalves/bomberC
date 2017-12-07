@@ -6,10 +6,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
+#include <pthread.h>
+#include <fcntl.h>
 
 #include "structs.h"
 
+//############################################ GLOBAL VARIABLES
 
+int sPipeKeepAlive=1;  //keeps the server pipe open
+
+//############################################
 
 void printhelp(){
     printf("ACCEPTED INTRSTRUCTIONS:\n");
@@ -24,6 +31,11 @@ void printhelp(){
 
 void shutdown(){
 
+}
+
+void gracefullexit(){
+
+    sPipeKeepAlive=0;
 }
 
 int add_user(char *user, char *passwd, db *usersdb, int i, char *filename){
@@ -103,16 +115,38 @@ int load_file2db( char *filename, db *usersdb){
     return i;
 }
 
+void *listenclients(void *ptr){
+
+    int     fd;
+    user    *newUser;
+
+    if(access("sPipe", F_OK)==-1)
+        if(mkfifo("sPipe", S_IRWXU)<0)
+            error(-1,0,"ERROR - Could not create pipe.");
+    fd=open("sPipe", O_RDWR);
+    if(fd==0)
+        error(-1,0,"ERROR - Could not open file.");
+
+    while(sPipeKeepAlive){
+        printf("threadopen\n");
+        sleep(1);
+    }
+
+    close(fd);
+    unlink("sPipe");
+}
+
 int main(int argc, char** argv) {
 
-    int     running=1;
-    int     arg_n;              //Custom shell argc equivalent
-    char    uinput[USR_LINE];
-    char    args[3][USR_TAM];   //Custom shell argv equivalent
-    db      usersdb[100];       //User database
-    int     userdb_size;
-    level   map;
-    bomber  player[20];
+    int         running=1;
+    int         arg_n;              //Custom shell argc equivalent
+    char        uinput[USR_LINE];
+    char        args[3][USR_TAM];   //Custom shell argv equivalent
+    db          usersdb[100];       //User database
+    int         userdb_size;
+    level       map;
+    bomber      player[20];
+    pthread_t   listen;
 
 
     if(argc>1)
@@ -120,6 +154,8 @@ int main(int argc, char** argv) {
     else
         error(-1,0,"ERROR - Please specify userfile.");
 
+    if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
+        error(-1,0,"ERROR - Error creating thread");
 
     printf("Type 'help' for help and 'exit' to abort.\n");
     while(running)
@@ -156,6 +192,9 @@ int main(int argc, char** argv) {
             printf("Command not found or missing arguments. Try 'help'.\n");
 
     }
+
+    gracefullexit();
+    pthread_join(listen, NULL);
 
     return (EXIT_SUCCESS);
 }
