@@ -3,6 +3,6 @@ CC		= gcc
 
 default:
 	mkdir -p bin
-	$(CC) *.h server.c -o ./bin/server
-	$(CC) *.h client.c -o ./bin/client
+	$(CC) *.h server.c -o ./bin/server -lpthread -lncurses
+	$(CC) *.h client.c -o ./bin/client -lpthread -lncurses
 

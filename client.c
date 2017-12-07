@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
         scanf(" %49[^\n]s",newUser.passwd);
         newUser.pid=getpid();
         running=0;
+        printf("\n %s\n%s\n%d",newUser.user,newUser.passwd, newUser.pid);
     }
 
     return (EXIT_SUCCESS);
