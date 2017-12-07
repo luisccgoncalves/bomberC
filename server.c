@@ -126,11 +126,15 @@ void *listenclients(void *ptr){
     fd=open("sPipe", O_RDWR);
     if(fd==0)
         error(-1,0,"ERROR - Could not open file.");
+    int reading=1;
 
-    while(sPipeKeepAlive){
-        printf("threadopen\n");
+
+        read(fd, newUser, sizeof(user));
         sleep(1);
-    }
+        printf("plim!");
+        //printf("\n%s\n%s\n%d",newUser->user,newUser->passwd, newUser->pid);
+
+    printf("plim--------!");
 
     close(fd);
     unlink("sPipe");
