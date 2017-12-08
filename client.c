@@ -29,16 +29,16 @@ int main(int argc, char** argv) {
     }
 
     int     fd;
-    user    *buffer;
+    //user    *buffer;
 
-    if(access("sPipe", F_OK)==-1)
-        if(mkfifo("sPipe", S_IRWXU)<0)
+    if(access("/tmp/sPipe", F_OK)==-1)
+        if(mkfifo("/tmp/sPipe", S_IRWXU)<0)
             error(-1,0,"ERROR - Could not create pipe.");
-    fd=open("sPipe", O_RDWR);
+    fd=open("/tmp/sPipe", O_RDWR);
     if(fd==0)
         error(-1,0,"ERROR - Could not open file.");
 
-    write(fd,buffer, sizeof(user));
+    write(fd,&newUser, sizeof(user));
 
     return (EXIT_SUCCESS);
 }

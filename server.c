@@ -14,7 +14,7 @@
 
 //############################################ GLOBAL VARIABLES
 
-int sPipeKeepAlive=1;  //keeps the server pipe open
+
 
 //############################################
 
@@ -33,9 +33,16 @@ void shutdown(){
 
 }
 
-void gracefullexit(){
+int gracefullexit(int fd){
 
-    sPipeKeepAlive=0;
+    //sPipeKeepAlive=0;
+
+    user    killpipe;
+
+    killpipe.pid=-1;
+    write(fd,&killpipe, sizeof(user));
+
+    return 0;
 }
 
 int add_user(char *user, char *passwd, db *usersdb, int i, char *filename){
@@ -117,33 +124,38 @@ int load_file2db( char *filename, db *usersdb){
 
 void *listenclients(void *ptr){
 
-    int     fd;
-    user    *newUser;
-
-    if(access("sPipe", F_OK)==-1)
-        if(mkfifo("sPipe", S_IRWXU)<0)
-            error(-1,0,"ERROR - Could not create pipe.");
-    fd=open("sPipe", O_RDWR);
-    if(fd==0)
-        error(-1,0,"ERROR - Could not open file.");
+    int     fd=*((int*)ptr);
+    user    newUser;
     int reading=1;
 
-
-        read(fd, newUser, sizeof(user));
-        sleep(1);
-        printf("plim!");
-        //printf("\n%s\n%s\n%d",newUser->user,newUser->passwd, newUser->pid);
-
-    printf("plim--------!");
+    while(1) {
+        read(fd, &newUser, sizeof(user));
+        if(newUser.pid<0)       //Trigger to close thread
+            break;
+        printf("\n%s\n%s\n%d\nbomber#>", newUser.user, newUser.passwd, newUser.pid);
+    }
 
     close(fd);
     unlink("sPipe");
+}
+
+int openPipe(char *pipename){
+    int fd;
+
+    if(access(pipename, F_OK)==-1)
+        if(mkfifo(pipename, S_IRWXU)<0)
+            error(-1,0,"ERROR - Could not create pipe.");
+    fd=open(pipename, O_RDWR);
+    if(fd==0)
+        error(-1,0,"ERROR - Could not open file.");
+    return fd;
 }
 
 int main(int argc, char** argv) {
 
     int         running=1;
     int         arg_n;              //Custom shell argc equivalent
+    int         sPipeFd;            //Server pipe file descriptor
     char        uinput[USR_LINE];
     char        args[3][USR_TAM];   //Custom shell argv equivalent
     db          usersdb[100];       //User database
@@ -152,13 +164,17 @@ int main(int argc, char** argv) {
     bomber      player[20];
     pthread_t   listen;
 
+    setbuf(stdout, NULL);
+
 
     if(argc>1)
         userdb_size=load_file2db(argv[1], usersdb);
     else
         error(-1,0,"ERROR - Please specify userfile.");
 
-    if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
+    sPipeFd=openPipe("/tmp/sPipe");
+
+    if(pthread_create(&listen,NULL, listenclients, (void *)&sPipeFd)!=0)
         error(-1,0,"ERROR - Error creating thread");
 
     printf("Type 'help' for help and 'exit' to abort.\n");
@@ -197,7 +213,8 @@ int main(int argc, char** argv) {
 
     }
 
-    gracefullexit();
+    gracefullexit(sPipeFd);
+
     pthread_join(listen, NULL);
 
     return (EXIT_SUCCESS);
