@@ -6,6 +6,7 @@
 #define LVL_W       20              //map width
 #define LVL_H       30              //map height
 #define S_PIPE      "/tmp/sPipe"    //Path and filename of server pipe
+#define C_PIPE      "/tmp/cPipe"    //Path and file prefix of a client pipe
 
 typedef struct {                    //sent from client to server with auth request
     int     pid;                    //creates a unique pipe to callback

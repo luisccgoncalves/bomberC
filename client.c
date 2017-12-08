@@ -11,34 +11,47 @@
 #include <pthread.h>
 #include <fcntl.h>
 
+int openPipe(char *pipename){
+    int fd;
+
+    if(access(pipename, F_OK)==-1)
+        if(mkfifo(pipename, S_IRWXU)<0)
+            error(-1,0,"ERROR - Could not create pipe.");
+    fd=open(pipename, O_RDWR);
+    if(fd==0)
+        error(-1,0,"ERROR - Could not open file.");
+    return fd;
+}
 
 int main(int argc, char** argv) {
 
     user newUser;
     int running=1;
+    int sPipeFd, cPipeFd;
+    char buffer[USR_TAM];
 
+    newUser.pid=0;
     printf("bomberC\nPlease login.\n");
-    while(running){
+    while(newUser.pid==0){
         printf("user:");
         scanf(" %49[^\n]s",newUser.user);
         printf("pass:");
         scanf(" %49[^\n]s",newUser.passwd);
         newUser.pid=getpid();
-        running=0;
-        printf("\n%s\n%s\n%d",newUser.user,newUser.passwd, newUser.pid);
+
+        sPipeFd=openPipe(S_PIPE);
+        write(sPipeFd,&newUser, sizeof(user));
+
+        sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
+        cPipeFd=openPipe(buffer);
+        read(cPipeFd,&newUser,sizeof(user));
+
+        if(newUser.pid==0)
+            printf("Wrong username or password.\n");
+        else
+            printf("Welcome %s.\n",newUser.user);
     }
 
-    int     fd;
-    //user    *buffer;
-
-    if(access("/tmp/sPipe", F_OK)==-1)
-        if(mkfifo("/tmp/sPipe", S_IRWXU)<0)
-            error(-1,0,"ERROR - Could not create pipe.");
-    fd=open("/tmp/sPipe", O_RDWR);
-    if(fd==0)
-        error(-1,0,"ERROR - Could not open file.");
-
-    write(fd,&newUser, sizeof(user));
 
     return (EXIT_SUCCESS);
 }

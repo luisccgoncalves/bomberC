@@ -76,11 +76,11 @@ int add_user(char *user, char *passwd, db *usersdb, int i, char *filename){
 
 void list_users(bomber *player, int n_players){
 
-    int i=0;
+    int i;
 
-    printf("UTILIZADORES:\n");
-
-        printf("%d: %s\n", i, player[1].user);
+    printf("USERS:\n");
+    for(i=0;i<n_players;i++)
+        printf("%d: %s\n", i+1, player[i].user);
 
 }
 
@@ -140,11 +140,25 @@ int userAuth(user newUser, database *authDB){
     return 0;                     //Returns 0 if authentication fails
 }
 
+int openPipe(char *pipename){
+    int fd;
+
+    if(access(pipename, F_OK)==-1)
+        if(mkfifo(pipename, S_IRWXU)<0)
+            error(-1,0,"ERROR - Could not create pipe.");
+    fd=open(pipename, O_RDWR);
+    if(fd==0)
+        error(-1,0,"ERROR - Could not open file.");
+    return fd;
+}
+
 void *listenclients(void *ptr){
 
     database    *authDB=((database*)ptr);
     user        newUser;
     int         authstatus=0;
+    char        buffer[USR_TAM];
+    int         cPipeFd;
 
     while(1) {
         read(authDB->sPipeFd, &newUser, sizeof(user));       //Listening
@@ -161,30 +175,21 @@ void *listenclients(void *ptr){
             printf("Player \"%s\" created.\nbomber#>",authDB->player[authDB->n_players].user);
             authDB->player[authDB->n_players].points=0;
             authDB->n_players++;
-
-            //Warn client #######################################
         }
         else if(authstatus<0)
             printf("ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
         else
             printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
 
+        sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
+        cPipeFd=openPipe(buffer);
+        newUser.pid=authstatus;
+        write(cPipeFd,&newUser, sizeof(user));
+
     }
 
     close(authDB->sPipeFd);
     unlink(S_PIPE);
-}
-
-int openPipe(char *pipename){
-    int fd;
-
-    if(access(pipename, F_OK)==-1)
-        if(mkfifo(pipename, S_IRWXU)<0)
-            error(-1,0,"ERROR - Could not create pipe.");
-    fd=open(pipename, O_RDWR);
-    if(fd==0)
-        error(-1,0,"ERROR - Could not open file.");
-    return fd;
 }
 
 int main(int argc, char** argv) {
@@ -231,9 +236,7 @@ int main(int argc, char** argv) {
             authDB.userdb_size=add_user(args[1],args[2],authDB.userdb,authDB.userdb_size, argv[1]);
 
         else if(!strcmp(args[0],"users")&&arg_n==1) {
-            printf("%d: %s\n", 0, authDB.player[0].user);
-            printf("%d: %s\n", 1, authDB.player[1].user);
-            //list_users(authDB.player, authDB.n_players);
+            list_users(authDB.player, authDB.n_players);
         }
 
         else if(!strcmp(args[0],"kick")&&arg_n==2)
