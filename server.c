@@ -120,6 +120,21 @@ int load_file2db( char *filename, db *usersdb){
     return i;
 }
 
+int userAuth(user newUser, database authDB){
+    int i=0;
+    int authOK=0;
+
+    for(i=0; i< authDB.userdb_size; i++)
+        if(!strcmp(newUser.user,authDB.userdb[i].user)) {
+            if (!strcmp(newUser.passwd,authDB.userdb[i].passwd)) {
+                printf("SUCCESS!!!\n");
+                authOK=1;
+                break;
+            }
+        }
+    return authOK;
+}
+
 void *listenclients(void *ptr){
 
     database    authDB;
@@ -132,7 +147,7 @@ void *listenclients(void *ptr){
         if(newUser.pid<0)       //Trigger to close thread
             break;
         //printf("\n%s\n%s\n%d\n",newUser.user,newUser.passwd, newUser.pid);
-        //userAuth(newUser);
+        userAuth(newUser, authDB);
     }
 
     close(authDB.sPipeFd);
@@ -170,7 +185,7 @@ int main(int argc, char** argv) {
     else
         error(-1,0,"ERROR - Please specify userfile.");
 
-    authDB.sPipeFd=openPipe("/tmp/sPipe");
+    authDB.sPipeFd=openPipe(S_PIPE);
 
     if(pthread_create(&listen,NULL, listenclients, (void *)&authDB)!=0)
         error(-1,0,"ERROR - Error creating thread");
