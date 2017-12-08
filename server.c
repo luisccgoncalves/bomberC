@@ -124,18 +124,20 @@ int load_file2db( char *filename, db *usersdb){
     return i;
 }
 
-int userAuthOK(user newUser, database authDB){
-    int i=0;
-    int authOK=0;
+int userAuth(user newUser, database authDB){
+    int i;
+
+    for(i=0; i< authDB.n_players; i++)
+        if(!strcmp(newUser.user,authDB.player[i].user))
+            return -1;                                      //Returns -1 if already logged in.
 
     for(i=0; i< authDB.userdb_size; i++)
         if(!strcmp(newUser.user,authDB.userdb[i].user)) {
-            if (!strcmp(newUser.passwd,authDB.userdb[i].passwd)) {
-                authOK=1;
-                break;
-            }
+            if (!strcmp(newUser.passwd,authDB.userdb[i].passwd))
+                return 1;                                   //Returns 1 if user logs in successfully
         }
-    return authOK;
+
+    return 0;                                               //Returns 0 if authentication fails
 }
 
 void *listenclients(void *ptr){
@@ -143,22 +145,28 @@ void *listenclients(void *ptr){
     database    authDB;
     authDB=*((database*)ptr);
     user        newUser;
+    int         authstatus=0;
 
     while(1) {
-        read(authDB.sPipeFd, &newUser, sizeof(user));
+        read(authDB.sPipeFd, &newUser, sizeof(user));       //Listening
         if(newUser.pid<0)       //Trigger to close thread
             break;
-        printf("1");
-        if(userAuthOK(newUser, authDB)) {     //If user authenticates
-            printf("2");
+        printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
+
+        authstatus=userAuth(newUser, authDB);
+        if(authstatus>0) {     //If user authenticates
+            printf("User\"%s\" logged in.\nbomber#>", newUser.user);
             strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
-            printf("3");
+            printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
             authDB.player[authDB.n_players].points=0;
-            printf("4");
             authDB.n_players++;
 
             //Warn client #######################################
         }
+        else if(authstatus<0)
+            printf("ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
+        else
+            printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
 
     }
 
