@@ -74,9 +74,13 @@ int add_user(char *user, char *passwd, db *usersdb, int i, char *filename){
     return i;
 }
 
-void list_users(bomber *player){
+void list_users(bomber *player, int n_players){
+
+    int i=0;
 
     printf("UTILIZADORES:\n");
+
+        printf("%d: %s\n", i, player[1].user);
 
 }
 
@@ -120,14 +124,13 @@ int load_file2db( char *filename, db *usersdb){
     return i;
 }
 
-int userAuth(user newUser, database authDB){
+int userAuthOK(user newUser, database authDB){
     int i=0;
     int authOK=0;
 
     for(i=0; i< authDB.userdb_size; i++)
         if(!strcmp(newUser.user,authDB.userdb[i].user)) {
             if (!strcmp(newUser.passwd,authDB.userdb[i].passwd)) {
-                printf("SUCCESS!!!\n");
                 authOK=1;
                 break;
             }
@@ -139,15 +142,24 @@ void *listenclients(void *ptr){
 
     database    authDB;
     authDB=*((database*)ptr);
-    user    newUser;
-    int reading=1;
+    user        newUser;
 
     while(1) {
         read(authDB.sPipeFd, &newUser, sizeof(user));
         if(newUser.pid<0)       //Trigger to close thread
             break;
-        //printf("\n%s\n%s\n%d\n",newUser.user,newUser.passwd, newUser.pid);
-        userAuth(newUser, authDB);
+        printf("1");
+        if(userAuthOK(newUser, authDB)) {     //If user authenticates
+            printf("2");
+            strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
+            printf("3");
+            authDB.player[authDB.n_players].points=0;
+            printf("4");
+            authDB.n_players++;
+
+            //Warn client #######################################
+        }
+
     }
 
     close(authDB.sPipeFd);
@@ -173,9 +185,9 @@ int main(int argc, char** argv) {
     char        uinput[USR_LINE];
     char        args[3][USR_TAM];   //Custom shell argv equivalent
     level       map;
-    bomber      player[20];
     pthread_t   listen;
     database    authDB;
+    authDB.n_players=0;
 
     setbuf(stdout, NULL);
 
@@ -210,7 +222,7 @@ int main(int argc, char** argv) {
             authDB.userdb_size=add_user(args[1],args[2],authDB.userdb,authDB.userdb_size, argv[1]);
 
         else if(!strcmp(args[0],"users")&&arg_n==1)
-            list_users(player);
+            list_users(authDB.player,authDB.n_players);
 
         else if(!strcmp(args[0],"kick")&&arg_n==2)
             kick(args[1]);

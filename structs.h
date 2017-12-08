@@ -1,19 +1,19 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
-#define USR_TAM     50      //defines user string sizes
-#define USR_LINE    1024    //defines whole line max size
-#define LVL_W       20      //map width
-#define LVL_H       30      //map height
-#define S_PIPE      "/tmp/sPipe"
+#define USR_TAM     50              //defines user string sizes
+#define USR_LINE    1024            //defines whole line max size
+#define LVL_W       20              //map width
+#define LVL_H       30              //map height
+#define S_PIPE      "/tmp/sPipe"    //Path and filename of server pipe
 
-typedef struct {    //sent from client to server with auth request
-    int     pid;            //creates a unique pipe to callback
+typedef struct {                    //sent from client to server with auth request
+    int     pid;                    //creates a unique pipe to callback
     char    user[USR_TAM];
     char    passwd[USR_TAM];
 }user;
 
-typedef struct {    //used to create an array usernames and password
+typedef struct {                    //used to create an array usernames and password
     char    user[USR_TAM];
     char    passwd[USR_TAM];
 }db;
@@ -55,6 +55,8 @@ typedef struct{
     int     sPipeFd;
     int     userdb_size;
     db      userdb[100];
+    int     n_players;
+    bomber  player[20];
 }database;
 
 
