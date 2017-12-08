@@ -5,8 +5,7 @@
 #define USR_LINE    1024    //defines whole line max size
 #define LVL_W       20      //map width
 #define LVL_H       30      //map height
-#define S_(x) #x
-#define S(x) S_(x)
+#define S_PIPE      "/tmp/sPipe"
 
 typedef struct {    //sent from client to server with auth request
     int     pid;            //creates a unique pipe to callback
@@ -51,6 +50,12 @@ typedef struct{
     int     n_enemies;  //number of enemies
     int     exit[2];    //exit x y position, enabled when n_obj=0
 }level;
+
+typedef struct{
+    int     sPipeFd;
+    int     userdb_size;
+    db      userdb[100];
+}database;
 
 
 #endif /* STRUCTS_H */

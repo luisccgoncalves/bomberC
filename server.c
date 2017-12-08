@@ -35,11 +35,9 @@ void shutdown(){
 
 int gracefullexit(int fd){
 
-    //sPipeKeepAlive=0;
-
     user    killpipe;
-
     killpipe.pid=-1;
+
     write(fd,&killpipe, sizeof(user));
 
     return 0;
@@ -124,19 +122,21 @@ int load_file2db( char *filename, db *usersdb){
 
 void *listenclients(void *ptr){
 
-    int     fd=*((int*)ptr);
+    database    authDB;
+    authDB=*((database*)ptr);
     user    newUser;
     int reading=1;
 
     while(1) {
-        read(fd, &newUser, sizeof(user));
+        read(authDB.sPipeFd, &newUser, sizeof(user));
         if(newUser.pid<0)       //Trigger to close thread
             break;
-        printf("\n%s\n%s\n%d\nbomber#>", newUser.user, newUser.passwd, newUser.pid);
+        //printf("\n%s\n%s\n%d\n",newUser.user,newUser.passwd, newUser.pid);
+        //userAuth(newUser);
     }
 
-    close(fd);
-    unlink("sPipe");
+    close(authDB.sPipeFd);
+    unlink(S_PIPE);
 }
 
 int openPipe(char *pipename){
@@ -155,26 +155,24 @@ int main(int argc, char** argv) {
 
     int         running=1;
     int         arg_n;              //Custom shell argc equivalent
-    int         sPipeFd;            //Server pipe file descriptor
     char        uinput[USR_LINE];
     char        args[3][USR_TAM];   //Custom shell argv equivalent
-    db          usersdb[100];       //User database
-    int         userdb_size;
     level       map;
     bomber      player[20];
     pthread_t   listen;
+    database    authDB;
 
     setbuf(stdout, NULL);
 
 
     if(argc>1)
-        userdb_size=load_file2db(argv[1], usersdb);
+        authDB.userdb_size=load_file2db(argv[1], authDB.userdb);
     else
         error(-1,0,"ERROR - Please specify userfile.");
 
-    sPipeFd=openPipe("/tmp/sPipe");
+    authDB.sPipeFd=openPipe("/tmp/sPipe");
 
-    if(pthread_create(&listen,NULL, listenclients, (void *)&sPipeFd)!=0)
+    if(pthread_create(&listen,NULL, listenclients, (void *)&authDB)!=0)
         error(-1,0,"ERROR - Error creating thread");
 
     printf("Type 'help' for help and 'exit' to abort.\n");
@@ -194,7 +192,7 @@ int main(int argc, char** argv) {
             shutdown();
 
         else if(!strcmp(args[0],"add")&&arg_n==3)
-            userdb_size=add_user(args[1],args[2],usersdb,userdb_size, argv[1]);
+            authDB.userdb_size=add_user(args[1],args[2],authDB.userdb,authDB.userdb_size, argv[1]);
 
         else if(!strcmp(args[0],"users")&&arg_n==1)
             list_users(player);
@@ -213,7 +211,7 @@ int main(int argc, char** argv) {
 
     }
 
-    gracefullexit(sPipeFd);
+    gracefullexit(authDB.sPipeFd);
 
     pthread_join(listen, NULL);
 
