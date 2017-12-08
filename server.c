@@ -142,24 +142,25 @@ int userAuth(user newUser, database *authDB){
 
 void *listenclients(void *ptr){
 
-    database    authDB;
-    authDB=*((database*)ptr);
+    database    *authDB=((database*)ptr);
     user        newUser;
     int         authstatus=0;
 
     while(1) {
-        read(((database*)ptr)->sPipeFd, &newUser, sizeof(user));       //Listening
+        read(authDB->sPipeFd, &newUser, sizeof(user));       //Listening
+
         if(newUser.pid<0)       //Trigger to close thread
             break;
+
         printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
 
-        authstatus=userAuth(newUser, ((database*)ptr));
+        authstatus=userAuth(newUser, authDB);
         if(authstatus>0) {     //If user authenticates
             printf("User\"%s\" logged in.\nbomber#>", newUser.user);
-            strcpy(((database*)ptr)->player[((database*)ptr)->n_players].user,newUser.user);//User is now a player
-            printf("Player \"%s\" created.\nbomber#>",((database*)ptr)->player[((database*)ptr)->n_players].user);
-            ((database*)ptr)->player[((database*)ptr)->n_players].points=0;
-            ((database*)ptr)->n_players++;
+            strcpy(authDB->player[authDB->n_players].user,newUser.user);//User is now a player
+            printf("Player \"%s\" created.\nbomber#>",authDB->player[authDB->n_players].user);
+            authDB->player[authDB->n_players].points=0;
+            authDB->n_players++;
 
             //Warn client #######################################
         }
@@ -170,7 +171,7 @@ void *listenclients(void *ptr){
 
     }
 
-    close(authDB.sPipeFd);
+    close(authDB->sPipeFd);
     unlink(S_PIPE);
 }
 
