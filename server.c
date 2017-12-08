@@ -124,20 +124,20 @@ int load_file2db( char *filename, db *usersdb){
     return i;
 }
 
-int userAuth(user newUser, database authDB){
+int userAuth(user newUser, database *authDB){
     int i;
 
-    for(i=0; i< authDB.n_players; i++)
-        if(!strcmp(newUser.user,authDB.player[i].user))
-            return -1;                                      //Returns -1 if already logged in.
+    for(i=0; i< authDB->n_players; i++)
+        if(!strcmp(newUser.user,authDB->player[i].user))
+            return -1;            //Returns -1 if already logged in.
 
-    for(i=0; i< authDB.userdb_size; i++)
-        if(!strcmp(newUser.user,authDB.userdb[i].user)) {
-            if (!strcmp(newUser.passwd,authDB.userdb[i].passwd))
-                return 1;                                   //Returns 1 if user logs in successfully
+    for(i=0; i< authDB->userdb_size; i++)
+        if(!strcmp(newUser.user,authDB->userdb[i].user)) {
+            if (!strcmp(newUser.passwd,authDB->userdb[i].passwd))
+                return 1;         //Returns 1 if user logs in successfully
         }
 
-    return 0;                                               //Returns 0 if authentication fails
+    return 0;                     //Returns 0 if authentication fails
 }
 
 void *listenclients(void *ptr){
@@ -148,18 +148,18 @@ void *listenclients(void *ptr){
     int         authstatus=0;
 
     while(1) {
-        read(authDB.sPipeFd, &newUser, sizeof(user));       //Listening
+        read(((database*)ptr)->sPipeFd, &newUser, sizeof(user));       //Listening
         if(newUser.pid<0)       //Trigger to close thread
             break;
         printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
 
-        authstatus=userAuth(newUser, authDB);
+        authstatus=userAuth(newUser, ((database*)ptr));
         if(authstatus>0) {     //If user authenticates
             printf("User\"%s\" logged in.\nbomber#>", newUser.user);
-            strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
-            printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
-            authDB.player[authDB.n_players].points=0;
-            authDB.n_players++;
+            strcpy(((database*)ptr)->player[((database*)ptr)->n_players].user,newUser.user);//User is now a player
+            printf("Player \"%s\" created.\nbomber#>",((database*)ptr)->player[((database*)ptr)->n_players].user);
+            ((database*)ptr)->player[((database*)ptr)->n_players].points=0;
+            ((database*)ptr)->n_players++;
 
             //Warn client #######################################
         }
@@ -229,8 +229,11 @@ int main(int argc, char** argv) {
         else if(!strcmp(args[0],"add")&&arg_n==3)
             authDB.userdb_size=add_user(args[1],args[2],authDB.userdb,authDB.userdb_size, argv[1]);
 
-        else if(!strcmp(args[0],"users")&&arg_n==1)
-            list_users(authDB.player,authDB.n_players);
+        else if(!strcmp(args[0],"users")&&arg_n==1) {
+            printf("%d: %s\n", 0, authDB.player[0].user);
+            printf("%d: %s\n", 1, authDB.player[1].user);
+            //list_users(authDB.player, authDB.n_players);
+        }
 
         else if(!strcmp(args[0],"kick")&&arg_n==2)
             kick(args[1]);
