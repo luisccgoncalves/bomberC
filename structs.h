@@ -12,6 +12,7 @@ typedef struct {                    //sent from client to server with auth reque
     int     pid;                    //creates a unique pipe to callback
     char    user[USR_TAM];
     char    passwd[USR_TAM];
+    int     authOK;
 }user;
 
 typedef struct {                    //used to create an array usernames and password

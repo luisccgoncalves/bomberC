@@ -15,7 +15,7 @@ int openPipe(char *pipename){
     int fd;
 
     if(access(pipename, F_OK)==-1)
-        if(mkfifo(pipename, S_IRWXU)<0)
+        if(mkfifo(pipename, 0777)<0)
             error(-1,0,"ERROR - Could not create pipe.");
     fd=open(pipename, O_RDWR);
     if(fd==0)
@@ -30,6 +30,8 @@ int main(int argc, char** argv) {
     int sPipeFd, cPipeFd;
     char buffer[USR_TAM];
 
+    setbuf(stdout, NULL);
+
     newUser.pid=0;
     printf("bomberC\nPlease login.\n");
     while(newUser.pid==0){
@@ -39,19 +41,21 @@ int main(int argc, char** argv) {
         scanf(" %49[^\n]s",newUser.passwd);
         newUser.pid=getpid();
 
-        sPipeFd=openPipe(S_PIPE);
+        sPipeFd=open(S_PIPE,O_RDWR);
+            //control
         write(sPipeFd,&newUser, sizeof(user));
-
         sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-        cPipeFd=openPipe(buffer);
-        read(cPipeFd,&newUser,sizeof(user));
+        printf("%s\n",buffer);
 
-        if(newUser.pid==0)
+        cPipeFd=openPipe(buffer);
+        //cPipeFd=open(buffer,O_RDWR);
+        read(cPipeFd,&newUser,sizeof(user));
+        printf("----%d\n",newUser.authOK);
+        if(newUser.authOK==0)
             printf("Wrong username or password.\n");
         else
             printf("Welcome %s.\n",newUser.user);
     }
-
 
     return (EXIT_SUCCESS);
 }

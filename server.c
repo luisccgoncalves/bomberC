@@ -144,7 +144,7 @@ int openPipe(char *pipename){
     int fd;
 
     if(access(pipename, F_OK)==-1)
-        if(mkfifo(pipename, S_IRWXU)<0)
+        if(mkfifo(pipename, 0777)<0)
             error(-1,0,"ERROR - Could not create pipe.");
     fd=open(pipename, O_RDWR);
     if(fd==0)
@@ -182,8 +182,14 @@ void *listenclients(void *ptr){
             printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
 
         sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-        cPipeFd=openPipe(buffer);
-        newUser.pid=authstatus;
+        printf(buffer,"%s_%d\n",C_PIPE,newUser.pid);
+        //cPipeFd=openPipe(buffer);
+        //usleep(100); //################check if pipe exists
+        while(access(buffer, F_OK)==-1);
+        cPipeFd=open(buffer,O_RDWR);
+            //control
+
+        newUser.authOK=authstatus;
         write(cPipeFd,&newUser, sizeof(user));
 
     }
