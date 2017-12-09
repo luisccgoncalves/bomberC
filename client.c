@@ -29,6 +29,15 @@ void gracefullexit(){
     unlink(clt_pipe);
 }
 
+void signal_handler(int signum){
+
+    if(signum==SIGINT){
+        gracefullexit();
+        printf("\nSHUTTING DOWN.\n");
+        exit(0);
+    }
+}
+
 void *pingpong(void *ptr){
 
     while(1){
@@ -51,6 +60,7 @@ int main(int argc, char** argv) {
     pthread_t   keepalive;
 
     setbuf(stdout, NULL);
+    signal(SIGINT, signal_handler);
 
 
 //=================================================== OPEN SERVER PIPE

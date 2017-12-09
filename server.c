@@ -18,10 +18,6 @@ database    authDB;
 
 //############################################
 
-void signal_handler(int signum){
-
-    printf("Received signal %d.\n",signum);
-}
 void printhelp(){
     printf("ACCEPTED INSTRUCTIONS:\n");
     printf("    exit: Aborts the program\n");
@@ -37,14 +33,26 @@ void shutdown(){
 
 }
 
-int gracefullexit(int fd){
+void gracefullexit(){
 
     user    killpipe;
     killpipe.pid=-1;
 
-    write(fd,&killpipe, sizeof(user));
+    write(authDB.sPipeFd,&killpipe, sizeof(user));
 
-    return 0;
+    close(authDB.sPipeFd);
+    //TBI close client pipes
+    unlink(S_PIPE);
+
+}
+
+void signal_handler(int signum){
+
+    if((signum==SIGINT)||(signum==SIGUSR1)){
+        gracefullexit();
+        printf("\nReceived signal %d.\nSHUTTING DOWN.\n",signum);
+        exit(0);
+    }
 }
 
 int add_user(char *user, char *passwd, db *usersdb, int i, char *filename){
@@ -128,16 +136,16 @@ int load_file2db( char *filename, db *usersdb){
     return i;
 }
 
-int userAuth(user newUser, database *authDB){
+int userAuth(user newUser){
     int i;
 
-    for(i=0; i< authDB->n_players; i++)
-        if(!strcmp(newUser.user,authDB->player[i].user))
+    for(i=0; i< authDB.n_players; i++)
+        if(!strcmp(newUser.user,authDB.player[i].user))
             return -1;            //Returns -1 if already logged in.
 
-    for(i=0; i< authDB->userdb_size; i++)
-        if(!strcmp(newUser.user,authDB->userdb[i].user)) {
-            if (!strcmp(newUser.passwd,authDB->userdb[i].passwd))
+    for(i=0; i< authDB.userdb_size; i++)
+        if(!strcmp(newUser.user,authDB.userdb[i].user)) {
+            if (!strcmp(newUser.passwd,authDB.userdb[i].passwd))
                 return 1;         //Returns 1 if user logs in successfully
         }
 
@@ -146,27 +154,26 @@ int userAuth(user newUser, database *authDB){
 
 void *listenclients(void *ptr){
 
-    database    *authDB=((database*)ptr);
     user        newUser;
     int         authstatus=0;
     char        buffer[USR_TAM];
     int         cPipeFd;
 
     while(1) {
-        read(authDB->sPipeFd, &newUser, sizeof(user));       //Listening
+        read(authDB.sPipeFd, &newUser, sizeof(user));       //Listening
 
         if(newUser.pid<0)       //Trigger to close thread
             break;
 
         printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
 
-        authstatus=userAuth(newUser, authDB);
+        authstatus=userAuth(newUser);
         if(authstatus>0) {     //If user authenticates
             printf("User\"%s\" logged in.\nbomber#>", newUser.user);
-            strcpy(authDB->player[authDB->n_players].user,newUser.user);//User is now a player
-            printf("Player \"%s\" created.\nbomber#>",authDB->player[authDB->n_players].user);
-            authDB->player[authDB->n_players].points=0;
-            authDB->n_players++;
+            strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
+            printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
+            authDB.player[authDB.n_players].points=0;
+            authDB.n_players++;
         }
         else if(authstatus<0)
             printf("ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
@@ -191,9 +198,6 @@ void *listenclients(void *ptr){
         write(cPipeFd,&newUser, sizeof(user));
 
     }
-
-    close(authDB->sPipeFd);
-    unlink(S_PIPE);
 }
 
 int main(int argc, char** argv) {
@@ -208,6 +212,7 @@ int main(int argc, char** argv) {
 
     setbuf(stdout, NULL);
     signal(SIGINT, signal_handler);
+    signal(SIGUSR1, signal_handler);
 
 
     if(argc>1)
@@ -228,7 +233,7 @@ int main(int argc, char** argv) {
 //====================================================================================
 
 
-    if(pthread_create(&listen,NULL, listenclients, (void *)&authDB)!=0)
+    if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
         error(-1,0,"ERROR - Error creating thread");
 
     printf("Type 'help' for help and 'exit' to abort.\n");
