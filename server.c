@@ -14,12 +14,16 @@
 
 //############################################ GLOBAL VARIABLES
 
-
+database    authDB;
 
 //############################################
 
+void signal_handler(int signum){
+
+    printf("Received signal %d.\n",signum);
+}
 void printhelp(){
-    printf("ACCEPTED INTRSTRUCTIONS:\n");
+    printf("ACCEPTED INSTRUCTIONS:\n");
     printf("    exit: Aborts the program\n");
     printf("    shutdown: Ends a game\n");
     printf("    add [username] [password]: Creates a new username\n");
@@ -200,10 +204,10 @@ int main(int argc, char** argv) {
     char        args[3][USR_TAM];   //Custom shell argv equivalent
     level       map;
     pthread_t   listen;
-    database    authDB;
     authDB.n_players=0;
 
     setbuf(stdout, NULL);
+    signal(SIGINT, signal_handler);
 
 
     if(argc>1)

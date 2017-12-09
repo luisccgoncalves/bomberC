@@ -39,6 +39,8 @@ typedef struct{
     int     n_bombs;    //number of bombs
     int     n_bobombs;  //number of big bombs
     int     points;     //player points
+    int     pid;
+    char    pipename[USR_TAM];
 }bomber;
 
 typedef struct{         //object only has x y position
