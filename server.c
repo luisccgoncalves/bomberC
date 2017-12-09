@@ -182,7 +182,7 @@ void *listenclients(void *ptr){
 
 //====================================================================================
 
-
+        newUser.pid=getpid();
         newUser.authOK=authstatus;
         write(cPipeFd,&newUser, sizeof(user));
 

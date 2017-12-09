@@ -11,7 +11,12 @@
 #include <pthread.h>
 #include <fcntl.h>
 
+//############################################ GLOBAL VARIABLES
+
 int sPipeFd, cPipeFd;
+int ServerPID;
+
+//############################################
 
 void gracefullexit(){
 
@@ -21,7 +26,6 @@ void gracefullexit(){
 
     close(sPipeFd);
     close(cPipeFd);
-    unlink(S_PIPE);
     unlink(clt_pipe);
 }
 
@@ -38,18 +42,21 @@ void *pingpong(void *ptr){
 
 int main(int argc, char** argv) {
 
-    user newUser;
-    int running=1;
-    char buffer[USR_TAM];
+    user        newUser;
+    int         running=1;
+    int         arg_n;              //Custom shell argc equivalent
+    char        uinput[USR_LINE];
+    char        args[3][USR_TAM];   //Custom shell argv equivalent
+    char        buffer[USR_TAM];
     pthread_t   keepalive;
-    setbuf(stdout, NULL);
 
-    if(pthread_create(&keepalive,NULL, pingpong, NULL)!=0)
-        error(-1,0,"ERROR - Error creating thread");
+    setbuf(stdout, NULL);
 
 
 //=================================================== OPEN SERVER PIPE
 
+    if(access(S_PIPE, F_OK)==-1)  //If pipe isn't created, server is offline
+        error(-1, 0, "ERROR - Server is offline");
     sPipeFd=open(S_PIPE,O_RDWR);
     if(sPipeFd==0)
         error(-1,0,"ERROR - Could not open pipe.");
@@ -84,11 +91,29 @@ int main(int argc, char** argv) {
 
         read(cPipeFd,&newUser,sizeof(user));
 
-        if(newUser.authOK==0)
+        ServerPID=newUser.pid;
+        //Creates a thread to send/receive keepalive signals
+        if(pthread_create(&keepalive,NULL, pingpong, NULL)!=0)
+            error(-1,0,"ERROR - Error creating thread");
+
+        if(newUser.authOK==0) {
+            running=0;
             printf("Wrong username or password.\n");
+        }
         else
             printf("Welcome %s.\n",newUser.user);
     }
+
+    while(running) {
+        printf("bomber#>");
+        scanf(" %1023[^\n]s", uinput);
+        arg_n = sscanf(uinput, "%s %s %s", args[0], args[1], args[2]);
+
+        if (!strcmp(args[0], "exit"))
+            running = 0;
+    }
+
+    gracefullexit();
 
     return (EXIT_SUCCESS);
 }
