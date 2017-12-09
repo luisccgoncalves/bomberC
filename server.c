@@ -140,18 +140,6 @@ int userAuth(user newUser, database *authDB){
     return 0;                     //Returns 0 if authentication fails
 }
 
-int openPipe(char *pipename){
-    int fd;
-
-    if(access(pipename, F_OK)==-1)
-        if(mkfifo(pipename, 0777)<0)
-            error(-1,0,"ERROR - Could not create pipe.");
-    fd=open(pipename, O_RDWR);
-    if(fd==0)
-        error(-1,0,"ERROR - Could not open file.");
-    return fd;
-}
-
 void *listenclients(void *ptr){
 
     database    *authDB=((database*)ptr);
@@ -181,13 +169,19 @@ void *listenclients(void *ptr){
         else
             printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
 
+
+//=================================================================== OPEN CLIENT PIPE
+
         sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-        printf(buffer,"%s_%d\n",C_PIPE,newUser.pid);
-        //cPipeFd=openPipe(buffer);
-        //usleep(100); //################check if pipe exists
-        while(access(buffer, F_OK)==-1);
+        for(int i=0;(access(buffer, F_OK)==-1)||i<100;i++);
+        //waits for the client to create a pipe (has a timeout in case of client crash)
+
         cPipeFd=open(buffer,O_RDWR);
-            //control
+        if(cPipeFd==0)
+            error(-1,0,"ERROR - Could not open pipe.");
+
+//====================================================================================
+
 
         newUser.authOK=authstatus;
         write(cPipeFd,&newUser, sizeof(user));
@@ -217,7 +211,18 @@ int main(int argc, char** argv) {
     else
         error(-1,0,"ERROR - Please specify userfile.");
 
-    authDB.sPipeFd=openPipe(S_PIPE);
+
+//================================================================= CREATE SERVER PIPE
+
+    if(access(S_PIPE, F_OK)==-1)
+        if(mkfifo(S_PIPE, 0777)<0)
+            error(-1,0,"ERROR - Could not create pipe.");
+    authDB.sPipeFd=open(S_PIPE, O_RDWR);
+    if(authDB.sPipeFd==0)
+        error(-1,0,"ERROR - Could not open pipe.");
+
+//====================================================================================
+
 
     if(pthread_create(&listen,NULL, listenclients, (void *)&authDB)!=0)
         error(-1,0,"ERROR - Error creating thread");

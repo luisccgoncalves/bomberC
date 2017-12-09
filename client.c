@@ -11,18 +11,6 @@
 #include <pthread.h>
 #include <fcntl.h>
 
-int openPipe(char *pipename){
-    int fd;
-
-    if(access(pipename, F_OK)==-1)
-        if(mkfifo(pipename, 0777)<0)
-            error(-1,0,"ERROR - Could not create pipe.");
-    fd=open(pipename, O_RDWR);
-    if(fd==0)
-        error(-1,0,"ERROR - Could not open file.");
-    return fd;
-}
-
 int main(int argc, char** argv) {
 
     user newUser;
@@ -32,25 +20,45 @@ int main(int argc, char** argv) {
 
     setbuf(stdout, NULL);
 
-    newUser.pid=0;
+    newUser.authOK=0;
     printf("bomberC\nPlease login.\n");
-    while(newUser.pid==0){
+    while(newUser.authOK==0){
         printf("user:");
         scanf(" %49[^\n]s",newUser.user);
         printf("pass:");
         scanf(" %49[^\n]s",newUser.passwd);
         newUser.pid=getpid();
 
+
+//=================================================== OPEN SERVER PIPE
+
+        if(access(S_PIPE, F_OK)==-1) //If pipe isn't created, server is offline
+            error(-1,0,"ERROR - Server is offline");
         sPipeFd=open(S_PIPE,O_RDWR);
-            //control
+        if(sPipeFd==0)
+            error(-1,0,"ERROR - Could not open pipe.");
+
+//====================================================================
+
+
         write(sPipeFd,&newUser, sizeof(user));
         sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-        printf("%s\n",buffer);
 
-        cPipeFd=openPipe(buffer);
-        //cPipeFd=open(buffer,O_RDWR);
+
+//=================================================== OPEN CLIENT PIPE
+
+        if(access(buffer, F_OK)==-1)
+            if(mkfifo(buffer, 0777)<0)
+                error(-1,0,"ERROR - Could not create pipe.");
+        cPipeFd=open(buffer, O_RDWR);
+        if(cPipeFd==0)
+            error(-1,0,"ERROR - Could not open pipe.");
+
+//====================================================================
+
+
         read(cPipeFd,&newUser,sizeof(user));
-        printf("----%d\n",newUser.authOK);
+
         if(newUser.authOK==0)
             printf("Wrong username or password.\n");
         else
