@@ -11,14 +11,51 @@
 #include <pthread.h>
 #include <fcntl.h>
 
+int sPipeFd, cPipeFd;
+
+void gracefullexit(){
+
+    char clt_pipe[USR_TAM];
+
+    sprintf(clt_pipe,"%s_%d",C_PIPE,getpid());
+
+    close(sPipeFd);
+    close(cPipeFd);
+    unlink(S_PIPE);
+    unlink(clt_pipe);
+}
+
+void *pingpong(void *ptr){
+
+    while(1){
+        if(access(S_PIPE, F_OK)==-1) { //If pipe isn't created, server is offline
+            gracefullexit();
+            error(-1, 0, "ERROR - Server is offline");
+        }
+        sleep(5);
+    }
+}
+
 int main(int argc, char** argv) {
 
     user newUser;
     int running=1;
-    int sPipeFd, cPipeFd;
     char buffer[USR_TAM];
-
+    pthread_t   keepalive;
     setbuf(stdout, NULL);
+
+    if(pthread_create(&keepalive,NULL, pingpong, NULL)!=0)
+        error(-1,0,"ERROR - Error creating thread");
+
+
+//=================================================== OPEN SERVER PIPE
+
+    sPipeFd=open(S_PIPE,O_RDWR);
+    if(sPipeFd==0)
+        error(-1,0,"ERROR - Could not open pipe.");
+
+//====================================================================
+
 
     newUser.authOK=0;
     printf("bomberC\nPlease login.\n");
@@ -28,18 +65,6 @@ int main(int argc, char** argv) {
         printf("pass:");
         scanf(" %49[^\n]s",newUser.passwd);
         newUser.pid=getpid();
-
-
-//=================================================== OPEN SERVER PIPE
-
-        if(access(S_PIPE, F_OK)==-1) //If pipe isn't created, server is offline
-            error(-1,0,"ERROR - Server is offline");
-        sPipeFd=open(S_PIPE,O_RDWR);
-        if(sPipeFd==0)
-            error(-1,0,"ERROR - Could not open pipe.");
-
-//====================================================================
-
 
         write(sPipeFd,&newUser, sizeof(user));
         sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
