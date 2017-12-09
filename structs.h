@@ -41,6 +41,7 @@ typedef struct{
     int     points;     //player points
     int     pid;
     char    pipename[USR_TAM];
+    int     fd;
 }bomber;
 
 typedef struct{         //object only has x y position

@@ -41,7 +41,8 @@ void gracefullexit(){
     write(authDB.sPipeFd,&killpipe, sizeof(user));
 
     close(authDB.sPipeFd);
-    //TBI close client pipes
+    for(int i=0;i<authDB.n_players;i++)
+        close(authDB.player[i].fd);
     unlink(S_PIPE);
 
 }
@@ -170,9 +171,14 @@ void *listenclients(void *ptr){
         authstatus=userAuth(newUser);
         if(authstatus>0) {     //If user authenticates
             printf("User\"%s\" logged in.\nbomber#>", newUser.user);
+
             strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
-            printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
+            authDB.player[authDB.n_players].pid=newUser.pid;
+            sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
+            strcpy(authDB.player[authDB.n_players].pipename,buffer);
+            authDB.player[authDB.n_players].fd=cPipeFd;
             authDB.player[authDB.n_players].points=0;
+            printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
             authDB.n_players++;
         }
         else if(authstatus<0)
