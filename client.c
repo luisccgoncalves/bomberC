@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
         sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
 
 
-//=================================================== OPEN CLIENT PIPE
+//=================================================== CREATES CLIENT PIPE
 
         if(access(buffer, F_OK)==-1)
             if(mkfifo(buffer, 0777)<0)

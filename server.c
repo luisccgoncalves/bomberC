@@ -227,7 +227,7 @@ int main(int argc, char** argv) {
         error(-1,0,"ERROR - Please specify userfile.");
 
 
-//================================================================= CREATE SERVER PIPE
+//================================================================= CREATES SERVER PIPE
 
     if(access(S_PIPE, F_OK)==-1)
         if(mkfifo(S_PIPE, 0777)<0)
