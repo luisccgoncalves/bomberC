@@ -153,7 +153,7 @@ int userAuth(user newUser){
     return 0;                     //Returns 0 if authentication fails
 }
 
-void *listenclients(void *ptr){
+void *listenclients(void *ptr){ //re-write
 
     user        newUser;
     int         authstatus=0;
