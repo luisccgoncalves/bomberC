@@ -153,55 +153,75 @@ int userAuth(user newUser){
     return 0;                     //Returns 0 if authentication fails
 }
 
-void *listenclients(void *ptr){ //re-write
+void authclient(int clientpid){
 
     user        newUser;
     int         authstatus=0;
     char        buffer[USR_TAM];
     int         cPipeFd;
 
-    while(1) {
+    while (1) {
+
         read(authDB.sPipeFd, &newUser, sizeof(user));       //Listening
 
-        if(newUser.pid<0)       //Trigger to close thread
+        if(newUser.pid==clientpid)
             break;
+    }
 
-        printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
+    printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
 
-        authstatus=userAuth(newUser);
-        if(authstatus>0) {     //If user authenticates
-            printf("User\"%s\" logged in.\nbomber#>", newUser.user);
+    authstatus=userAuth(newUser);
+    if(authstatus>0) {     //If user authenticates
+        printf("User\"%s\" logged in.\nbomber#>", newUser.user);
 
-            strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
-            authDB.player[authDB.n_players].pid=newUser.pid;
-            sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-            strcpy(authDB.player[authDB.n_players].pipename,buffer);
-            authDB.player[authDB.n_players].fd=cPipeFd;
-            authDB.player[authDB.n_players].points=0;
-            printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
-            authDB.n_players++;
-        }
-        else if(authstatus<0)
-            printf("ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
-        else
-            printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
+        strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
+        authDB.player[authDB.n_players].pid=newUser.pid;
+        sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
+        strcpy(authDB.player[authDB.n_players].pipename,buffer);
+        authDB.player[authDB.n_players].fd=cPipeFd;
+        authDB.player[authDB.n_players].points=0;
+        printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
+        authDB.n_players++;
+    }
+    else if(authstatus<0)
+        printf("ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
+    else
+        printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
 
 
 //=================================================================== OPEN CLIENT PIPE
 
-        sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-        for(int i=0;(access(buffer, F_OK)==-1)||i<100;i++);
-        //waits for the client to create a pipe (has a timeout in case of client crash)
+    sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
+    for(int i=0;(access(buffer, F_OK)==-1)||i<100;i++);
+    //waits for the client to create a pipe (has a timeout in case of client crash)
 
-        cPipeFd=open(buffer,O_RDWR);
-        if(cPipeFd==0)
-            error(-1,0,"ERROR - Could not open pipe.");
+    cPipeFd=open(buffer,O_RDWR);
+    if(cPipeFd==0)
+        error(-1,0,"ERROR - Could not open pipe.");
 
 //====================================================================================
 
-        newUser.pid=getpid();
-        newUser.authOK=authstatus;
-        write(cPipeFd,&newUser, sizeof(user));
+    newUser.pid=getpid();
+    newUser.authOK=authstatus;
+    write(cPipeFd,&newUser, sizeof(user));
+}
+
+void *listenclients(void *ptr){
+
+    canary header;
+    header.structype=1;
+
+    while(header.structype) {
+
+        read(authDB.sPipeFd, &header.structype, sizeof(int));
+
+        switch (header.structype){
+            case 1:
+                authclient(header.clientpid);
+                break;
+
+        }
+
 
     }
 }

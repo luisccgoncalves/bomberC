@@ -64,5 +64,10 @@ typedef struct{
     bomber  player[20];
 }database;
 
+typedef struct{         //warns the server what's the next structure type
+    int     structype;  //1- struct user
+    int     clientpid;
+}canary;
+
 
 #endif /* STRUCTS_H */
