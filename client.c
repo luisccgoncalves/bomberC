@@ -38,41 +38,50 @@ void signal_handler(int signum){
     }
 }
 
-void *pingpong(void *ptr){
+void openSpipe(char *pipename){
 
-    while(1){
-        if(access(S_PIPE, F_OK)==-1) { //If pipe isn't created, server is offline
-            gracefullexit();
-            error(-1, 0, "ERROR - Server is offline");
-        }
-        sleep(5);
-    }
-}
-
-int main(int argc, char** argv) {
-
-    user        newUser;
-    int         running=1;
-    int         arg_n;              //Custom shell argc equivalent
-    char        uinput[USR_LINE];
-    char        args[3][USR_TAM];   //Custom shell argv equivalent
-    char        buffer[USR_TAM];
-    pthread_t   keepalive;
-
-    setbuf(stdout, NULL);
-    signal(SIGINT, signal_handler);
-
-
-//=================================================== OPEN SERVER PIPE
-
-    if(access(S_PIPE, F_OK)==-1)  //If pipe isn't created, server is offline
+    if(access(pipename, F_OK)==-1)  //If pipe isn't created, server is offline
         error(-1, 0, "ERROR - Server is offline");
-    sPipeFd=open(S_PIPE,O_RDWR);
+    sPipeFd=open(pipename,O_RDWR);
     if(sPipeFd==0)
         error(-1,0,"ERROR - Could not open pipe.");
+}
 
-//====================================================================
+void openCpipe(char *pipename){
 
+    if(access(pipename, F_OK)==-1)
+        if(mkfifo(pipename, 0777)<0)
+            error(-1,0,"ERROR - Could not create pipe.");
+    cPipeFd=open(pipename, O_RDWR);
+    if(cPipeFd==0)
+        error(-1,0,"ERROR - Could not open pipe.");
+}
+
+void openpipe(char *pipename){
+
+    if(access(pipename, F_OK)==-1)
+        if(!strcmp(S_PIPE,pipename))    //If server pipe isn't created, quits
+            error(-1, 0, "ERROR - Server is offline");
+
+        else if(mkfifo(pipename, 0777)<0) //If client pipe isn't created, create it
+            error(-1,0,"ERROR - Could not create pipe.");
+
+    if(!strcmp(S_PIPE,pipename)){
+
+        sPipeFd=open(pipename,O_RDWR);
+        if(sPipeFd==0)
+            error(-1,0,"ERROR - Could not open pipe.");
+    }
+    else {
+
+        cPipeFd=open(pipename, O_RDWR);
+        if(cPipeFd==0)
+            error(-1,0,"ERROR - Could not open pipe.");
+    }
+
+}
+
+user login(user newUser){
 
     newUser.authOK=0;
     printf("bomberC\nPlease login.\n");
@@ -84,35 +93,39 @@ int main(int argc, char** argv) {
         newUser.pid=getpid();
 
         write(sPipeFd,&newUser, sizeof(user));
-        sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-
-
-//=================================================== CREATES CLIENT PIPE
-
-        if(access(buffer, F_OK)==-1)
-            if(mkfifo(buffer, 0777)<0)
-                error(-1,0,"ERROR - Could not create pipe.");
-        cPipeFd=open(buffer, O_RDWR);
-        if(cPipeFd==0)
-            error(-1,0,"ERROR - Could not open pipe.");
-
-//====================================================================
-
 
         read(cPipeFd,&newUser,sizeof(user));
 
         ServerPID=newUser.pid;
-        //Creates a thread to send/receive keepalive signals
-        if(pthread_create(&keepalive,NULL, pingpong, NULL)!=0)
-            error(-1,0,"ERROR - Error creating thread");
 
-        if(newUser.authOK==0) {
-            running=0;
+        if(newUser.authOK==0)
             printf("Wrong username or password.\n");
-        }
         else
             printf("Welcome %s.\n",newUser.user);
     }
+
+    return newUser;
+}
+
+int main(int argc, char** argv) {
+
+    user        newUser;
+    int         running=1;
+    int         arg_n;              //Custom shell argc equivalent
+    char        uinput[USR_LINE];
+    char        args[3][USR_TAM];   //Custom shell argv equivalent
+    char        buffer[USR_TAM];
+
+    setbuf(stdout, NULL);
+    signal(SIGINT, signal_handler);
+
+
+    openpipe(S_PIPE);    //Open Server Pipe
+
+    sprintf(buffer,"%s_%d",C_PIPE,getpid());
+    openpipe(buffer);    //Open Client Pipe
+
+    newUser=login(newUser);
 
     while(running) {
         printf("bomber#>");
