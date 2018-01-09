@@ -15,6 +15,7 @@
 //############################################ GLOBAL VARIABLES
 
 database    authDB;
+canary      header;
 
 //############################################
 
@@ -35,14 +36,16 @@ void shutdown(){
 
 void gracefullexit(){
 
-    user    killpipe;
-    killpipe.pid=-1;
+    canary    killpipe;
+    killpipe.structype=-1;
 
-    write(authDB.sPipeFd,&killpipe, sizeof(user));
+    write(authDB.sPipeFd,&killpipe, sizeof(killpipe));
 
     close(authDB.sPipeFd);
-    for(int i=0;i<authDB.n_players;i++)
+    for(int i=0;i<authDB.n_players;i++) {
+        kill(authDB.player[i].pid,SIGINT);
         close(authDB.player[i].fd);
+    }
     unlink(S_PIPE);
 
 }
@@ -211,18 +214,18 @@ void *listenclients(void *ptr){
     canary header;
     header.structype=1;
 
-    while(header.structype) {
+    while(header.structype!=-1) {
 
-        read(authDB.sPipeFd, &header.structype, sizeof(int));
+        read(authDB.sPipeFd, &header.structype, sizeof(header));
 
         switch (header.structype){
+
+            case -1: //this kills the thread
+                break;
             case 1:
                 authclient(header.clientpid);
                 break;
-
         }
-
-
     }
 }
 

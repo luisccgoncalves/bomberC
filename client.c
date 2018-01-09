@@ -14,7 +14,7 @@
 //############################################ GLOBAL VARIABLES
 
 int sPipeFd, cPipeFd;
-int ServerPID;
+int ServerPID=0;
 
 //############################################
 
@@ -35,6 +35,20 @@ void signal_handler(int signum){
         gracefullexit();
         printf("\nSHUTTING DOWN.\n");
         exit(0);
+    }
+}
+
+void *activewait(void *ptr){
+
+    //Shuts down the client if the server closes
+    //This thread ends after the client handshakes, server now has a pid to send signals to
+
+    while(ServerPID==0){
+        if(access(S_PIPE, F_OK)==-1) { //If pipe isn't created, server is offline
+            gracefullexit();
+            error(-1, 0, "ERROR - Server is offline");
+        }
+        sleep(5);
     }
 }
 
@@ -64,6 +78,7 @@ void openpipe(char *pipename){
 
 user login(user newUser){
 
+    canary header;
     newUser.authOK=0;
     printf("bomberC\nPlease login.\n");
     while(newUser.authOK==0){
@@ -71,15 +86,18 @@ user login(user newUser){
         scanf(" %49[^\n]s",newUser.user);
         printf("pass:");
         scanf(" %49[^\n]s",newUser.passwd);
-        newUser.pid=getpid();
 
-        write(sPipeFd,&newUser, sizeof(user));
+        header.clientpid=newUser.pid=getpid();
+        header.structype=1;
+
+        write(sPipeFd, &header, sizeof(header));
+        write(sPipeFd, &newUser, sizeof(user));
 
         read(cPipeFd,&newUser,sizeof(user));
 
         ServerPID=newUser.pid;
 
-        if(newUser.authOK==0)
+        if(newUser.authOK<1)
             printf("Wrong username or password.\n");
         else
             printf("Welcome %s.\n",newUser.user);
@@ -96,9 +114,13 @@ int main(int argc, char** argv) {
     char        uinput[USR_LINE];
     char        args[3][USR_TAM];   //Custom shell argv equivalent
     char        buffer[USR_TAM];
+    pthread_t   keepalive;
 
     setbuf(stdout, NULL);
     signal(SIGINT, signal_handler);
+
+    if(pthread_create(&keepalive,NULL, activewait, NULL)!=0)
+        error(-1,0,"ERROR - Error creating thread");
 
 
     openpipe(S_PIPE);    //Open Server Pipe
