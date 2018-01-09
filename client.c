@@ -38,25 +38,6 @@ void signal_handler(int signum){
     }
 }
 
-void openSpipe(char *pipename){
-
-    if(access(pipename, F_OK)==-1)  //If pipe isn't created, server is offline
-        error(-1, 0, "ERROR - Server is offline");
-    sPipeFd=open(pipename,O_RDWR);
-    if(sPipeFd==0)
-        error(-1,0,"ERROR - Could not open pipe.");
-}
-
-void openCpipe(char *pipename){
-
-    if(access(pipename, F_OK)==-1)
-        if(mkfifo(pipename, 0777)<0)
-            error(-1,0,"ERROR - Could not create pipe.");
-    cPipeFd=open(pipename, O_RDWR);
-    if(cPipeFd==0)
-        error(-1,0,"ERROR - Could not open pipe.");
-}
-
 void openpipe(char *pipename){
 
     if(access(pipename, F_OK)==-1)
