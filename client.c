@@ -20,9 +20,20 @@ int ServerPID=0;
 
 void gracefullexit(){
 
-    char clt_pipe[USR_TAM];
+    char    clt_pipe[USR_TAM];
+    canary  header;
+    user    deauth;
 
-    sprintf(clt_pipe,"%s_%d",C_PIPE,getpid());
+    header.structype=1;         //populates the header struct
+    header.clientpid=getpid();
+    deauth.authOK=-1;           //populates the struct with deauth warning
+    deauth.pid=header.clientpid;
+
+    //warns the server this client is going down
+    write(sPipeFd, &header, sizeof(header));
+    write(sPipeFd, &deauth, sizeof(user));
+
+    sprintf(clt_pipe,"%s_%d",C_PIPE,header.clientpid);
 
     close(sPipeFd);
     close(cPipeFd);
@@ -36,7 +47,6 @@ void signal_handler(int signum){
     if(signum==SIGINT){
         printf("\nSHUTTING DOWN.\n");
         gracefullexit();
-        exit(0);
     }
 }
 
@@ -132,7 +142,7 @@ void *listenserver(void *ptr){
                 break;
             case 1:  //not used
                 break;
-            case 2:
+            case 2:  //client will receive kick reason
                 kicked();
                 break;
 

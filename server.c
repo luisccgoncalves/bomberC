@@ -194,6 +194,18 @@ int userAuth(user newUser){
     return 0;                     //Returns 0 if authentication fails
 }
 
+void userDeauth(user deauth){
+    int i;
+
+    for(i=0;i<authDB.n_players;i++)
+        if(authDB.player[i].pid==deauth.pid) {
+            printf("User %s logged out.\nbomber#>", authDB.player[i].user);
+            for(i;i<authDB.n_players;i++)
+                authDB.player[i]=authDB.player[i+1];
+            authDB.n_players--;
+        }
+}
+
 void authclient(int clientpid){
 
     user        newUser;
@@ -207,6 +219,11 @@ void authclient(int clientpid){
 
         if(newUser.pid==clientpid)
             break;
+    }
+
+    if (newUser.authOK==-1) {
+        userDeauth(newUser);
+        return;
     }
 
     printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
@@ -242,8 +259,6 @@ void authclient(int clientpid){
         printf("ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
     else
         printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
-
-
 
     newUser.authOK=authstatus;
     write(authDB.player[authDB.n_players].fd,&newUser, sizeof(user));
@@ -332,7 +347,6 @@ int main(int argc, char** argv) {
 //====================================================================================
 
     deflvl=load_level(DEFLVL_PATH);
-    print_lvl(deflvl);
 
     if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
         error(-1,0,"ERROR - Error creating thread");
