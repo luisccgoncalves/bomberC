@@ -269,6 +269,10 @@ void *listenclients(void *ptr){
     }
 }
 
+void load_level(){
+
+}
+
 int main(int argc, char** argv) {
 
     int         running=1;
@@ -301,6 +305,7 @@ int main(int argc, char** argv) {
 
 //====================================================================================
 
+    load_level();
 
     if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
         error(-1,0,"ERROR - Error creating thread");
