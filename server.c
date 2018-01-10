@@ -280,15 +280,11 @@ level load_level(char *filename){
         error(-1,0,"ERROR - Could not open %s", filename);
 
     bytes=read(fd,&buffer.terrain, sizeof(char)*LVL_H*LVL_W);
-    printf("%d were read\n",bytes);
     bytes=read(fd,&lline, sizeof(lline));
-    printf("%d were read\n",bytes);
-    printf("%s",lline);
 
     sscanf(lline,"%d %d %d %d",
             &buffer.n_obj,&buffer.n_enemies,&buffer.exit[0],&buffer.exit[1]);
 
-    printf("\n%d\n",buffer.n_obj);
     printf("Loaded map name: %s\n", filename);
     close(fd);
     return buffer;
@@ -300,11 +296,6 @@ void print_lvl(level map){
     for(i=0;i<LVL_W;i++)
         for(j=0;j<LVL_H;j++)
             printf("%c",map.terrain[i][j]);
-
-    printf("Objects:%d\nEnemies:%d\nExit(x,y):%d,%d",
-           map.n_obj,map.n_enemies,map.exit[0],map.exit[1]);
-
-    printf("\n");
 }
 
 int main(int argc, char** argv) {
