@@ -36,10 +36,9 @@ void shutdown(){
 
 void gracefullexit(){
 
-    canary    killpipe;
-    killpipe.structype=-1;
+    header.structype=-1;
 
-    write(authDB.sPipeFd,&killpipe, sizeof(killpipe));
+    write(authDB.sPipeFd,&header, sizeof(header));
 
     close(authDB.sPipeFd);
     for(int i=0;i<authDB.n_players;i++) {
@@ -101,7 +100,29 @@ void list_users(bomber *player, int n_players){
 }
 
 void kick(char *username){
-    printf("Kicking %s...\n",username);
+    int i;
+    char buffer[USR_TAM];
+
+    if(!authDB.n_players) {
+        puts("No players logged in");
+        return;
+    }
+
+    for(i=0;i<authDB.n_players;i++)
+        if(!strcmp(username,authDB.player[i].user)){
+            printf("Reason: ");
+            scanf(" %49[^\n]s",buffer);
+
+            header.structype=2;
+
+            write(authDB.player[i].fd,&header, sizeof(header));
+            write(authDB.player[i].fd,&buffer, sizeof(buffer));
+
+            return;
+        }
+
+    printf("User %s is not logged in.\n", username);
+
 }
 
 void print_game_info(){
@@ -179,7 +200,17 @@ void authclient(int clientpid){
 
         strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
         authDB.player[authDB.n_players].pid=newUser.pid;
+
+
         sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
+
+        for(int i=0;(access(buffer, F_OK)==-1)||i<100;i++);
+        //waits for the client to create a pipe (has a timeout in case of client crash)
+
+        cPipeFd=open(buffer,O_RDWR);
+        if(cPipeFd==0)
+            error(-1,0,"ERROR - Could not open pipe.");
+
         strcpy(authDB.player[authDB.n_players].pipename,buffer);
         authDB.player[authDB.n_players].fd=cPipeFd;
         authDB.player[authDB.n_players].points=0;
@@ -191,18 +222,6 @@ void authclient(int clientpid){
     else
         printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
 
-
-//=================================================================== OPEN CLIENT PIPE
-
-    sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-    for(int i=0;(access(buffer, F_OK)==-1)||i<100;i++);
-    //waits for the client to create a pipe (has a timeout in case of client crash)
-
-    cPipeFd=open(buffer,O_RDWR);
-    if(cPipeFd==0)
-        error(-1,0,"ERROR - Could not open pipe.");
-
-//====================================================================================
 
     newUser.pid=getpid();
     newUser.authOK=authstatus;
@@ -216,13 +235,13 @@ void *listenclients(void *ptr){
 
     while(header.structype!=-1) {
 
-        read(authDB.sPipeFd, &header.structype, sizeof(header));
+        read(authDB.sPipeFd, &header, sizeof(header));
 
         switch (header.structype){
 
             case -1: //this kills the thread
                 break;
-            case 1:
+            case 1:  //struct type user
                 authclient(header.clientpid);
                 break;
         }

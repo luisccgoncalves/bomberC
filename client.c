@@ -27,6 +27,8 @@ void gracefullexit(){
     close(sPipeFd);
     close(cPipeFd);
     unlink(clt_pipe);
+
+    exit(0);
 }
 
 void signal_handler(int signum){
@@ -106,6 +108,38 @@ user login(user newUser){
     return newUser;
 }
 
+void kicked(){
+
+    char buffer[USR_TAM];
+
+    read(cPipeFd, &buffer, sizeof(buffer));
+    printf("\nYou got kicked!\nReason: %s\n",buffer);
+    gracefullexit();
+}
+
+void *listenserver(void *ptr){
+
+    canary header;
+    header.structype=1;
+
+    while(header.structype!=-1) {
+
+        read(cPipeFd, &header, sizeof(header));
+
+        switch (header.structype){
+
+            case -1: //this kills the thread
+                break;
+            case 1:  //not used
+                break;
+            case 2:
+                kicked();
+                break;
+
+        }
+    }
+}
+
 int main(int argc, char** argv) {
 
     user        newUser;
@@ -114,7 +148,7 @@ int main(int argc, char** argv) {
     char        uinput[USR_LINE];
     char        args[3][USR_TAM];   //Custom shell argv equivalent
     char        buffer[USR_TAM];
-    pthread_t   keepalive;
+    pthread_t   keepalive, listen;
 
     setbuf(stdout, NULL);
     signal(SIGINT, signal_handler);
@@ -129,6 +163,9 @@ int main(int argc, char** argv) {
     openpipe(buffer);    //Open Client Pipe
 
     newUser=login(newUser);
+
+    if(pthread_create(&listen,NULL, listenserver, NULL)!=0)
+        error(-1,0,"ERROR - Error creating thread");
 
     while(running) {
         printf("bomber#>");
