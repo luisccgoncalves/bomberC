@@ -23,6 +23,7 @@ void printhelp(){
     printf("ACCEPTED INSTRUCTIONS:\n");
     printf("    exit: Aborts the program\n");
     printf("    shutdown: Ends a game\n");
+    printf("    start: Starts a game with all logged players\n");
     printf("    add [username] [password]: Creates a new username\n");
     printf("    users: Lists logged in users.\n");
     printf("    kick [username]: Kicks a player out of a game.\n");
@@ -31,6 +32,10 @@ void printhelp(){
 }
 
 void shutdown(){
+
+}
+
+void start(){
 
 }
 
@@ -127,6 +132,18 @@ void kick(char *username){
 
 void print_game_info(){
 
+    int i;
+
+    printf("\xc9\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbb\n");
+    printf("\xba Name\t\xba Points\t\xba\n");
+    printf("\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xce\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9\n");
+
+    for(i=0;i<authDB.n_players;i++)
+        printf("\xba%s\t\xba %d\t\xba\n",
+               authDB.player[i].user,
+               authDB.player[i].points);
+
+    printf("\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n");
 }
 
 void load_map(char *mapname, level *map){
@@ -276,7 +293,7 @@ int main(int argc, char** argv) {
 //================================================================= CREATES SERVER PIPE
 
     if(access(S_PIPE, F_OK)==-1)
-        if(mkfifo(S_PIPE, 0777)<0)
+        if(mkfifo(S_PIPE, 0666)<0)
             error(-1,0,"ERROR - Could not create pipe.");
     authDB.sPipeFd=open(S_PIPE, O_RDWR);
     if(authDB.sPipeFd==0)
@@ -303,6 +320,9 @@ int main(int argc, char** argv) {
 
         else if(!strcmp(args[0],"shutdown")&&arg_n==1)
             shutdown();
+
+        else if(!strcmp(args[0],"start")&&arg_n==1)
+            start();
 
         else if(!strcmp(args[0],"add")&&arg_n==3)
             authDB.userdb_size=add_user(args[1],args[2],authDB.userdb,authDB.userdb_size, argv[1]);

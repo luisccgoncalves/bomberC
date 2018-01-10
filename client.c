@@ -60,7 +60,7 @@ void openpipe(char *pipename){
         if(!strcmp(S_PIPE,pipename))    //If server pipe isn't created, quits
             error(-1, 0, "ERROR - Server is offline");
 
-        else if(mkfifo(pipename, 0777)<0) //If client pipe isn't created, create it
+        else if(mkfifo(pipename, 0666)<0) //If client pipe isn't created, create it
             error(-1,0,"ERROR - Could not create pipe.");
 
     if(!strcmp(S_PIPE,pipename)){
