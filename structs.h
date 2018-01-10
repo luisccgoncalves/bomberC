@@ -3,10 +3,11 @@
 
 #define USR_TAM     50              //defines user string sizes
 #define USR_LINE    1024            //defines whole line max size
-#define LVL_W       20              //map width
-#define LVL_H       30              //map height
+#define LVL_W       33              //map width
+#define LVL_H       22              //map height
 #define S_PIPE      "/tmp/sPipe"    //Path and filename of server pipe
 #define C_PIPE      "/tmp/cPipe"    //Path and file prefix of a client pipe
+#define DEFLVL_PATH "default.lvl"
 
 typedef struct {                    //sent from client to server with auth request
     int     pid;                    //creates a unique pipe to callback
@@ -50,7 +51,7 @@ typedef struct{         //object only has x y position
 }object;
 
 typedef struct{
-    char    terrain[LVL_W][LVL_W];
+    char    terrain[LVL_W][LVL_H];
     int     n_obj;      //number of tokens to collect
     int     n_enemies;  //number of enemies
     int     exit[2];    //exit x y position, enabled when n_obj=0
