@@ -34,8 +34,8 @@ void gracefullexit(){
 void signal_handler(int signum){
 
     if(signum==SIGINT){
-        gracefullexit();
         printf("\nSHUTTING DOWN.\n");
+        gracefullexit();
         exit(0);
     }
 }
@@ -83,20 +83,20 @@ user login(user newUser){
     canary header;
     newUser.authOK=0;
     printf("bomberC\nPlease login.\n");
-    while(newUser.authOK==0){
+    while(newUser.authOK<=0){
         printf("user:");
         scanf(" %49[^\n]s",newUser.user);
         printf("pass:");
         scanf(" %49[^\n]s",newUser.passwd);
 
-        header.clientpid=newUser.pid=getpid();
+        header.clientpid=getpid();
+        newUser.pid=getpid();
         header.structype=1;
 
         write(sPipeFd, &header, sizeof(header));
         write(sPipeFd, &newUser, sizeof(user));
 
         read(cPipeFd,&newUser,sizeof(user));
-
         ServerPID=newUser.pid;
 
         if(newUser.authOK<1)

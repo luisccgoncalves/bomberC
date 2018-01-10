@@ -182,7 +182,7 @@ void authclient(int clientpid){
     user        newUser;
     int         authstatus=0;
     char        buffer[USR_TAM];
-    int         cPipeFd;
+    //int         cPipeFd;
 
     while (1) {
 
@@ -194,6 +194,15 @@ void authclient(int clientpid){
 
     printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
 
+    sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
+
+    for(int i=0;(access(buffer, F_OK)==-1)||i<100;i++);
+    //waits for the client to create a pipe (has a timeout in case of client crash)
+
+    authDB.player[authDB.n_players].fd=open(buffer,O_RDWR);
+    if(authDB.player[authDB.n_players].fd==0)
+        error(-1,0,"ERROR - Could not open pipe.");
+
     authstatus=userAuth(newUser);
     if(authstatus>0) {     //If user authenticates
         printf("User\"%s\" logged in.\nbomber#>", newUser.user);
@@ -201,21 +210,16 @@ void authclient(int clientpid){
         strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
         authDB.player[authDB.n_players].pid=newUser.pid;
 
-
-        sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
-
-        for(int i=0;(access(buffer, F_OK)==-1)||i<100;i++);
-        //waits for the client to create a pipe (has a timeout in case of client crash)
-
-        cPipeFd=open(buffer,O_RDWR);
-        if(cPipeFd==0)
-            error(-1,0,"ERROR - Could not open pipe.");
-
         strcpy(authDB.player[authDB.n_players].pipename,buffer);
-        authDB.player[authDB.n_players].fd=cPipeFd;
         authDB.player[authDB.n_players].points=0;
         printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
+
+        newUser.pid=getpid();
+        newUser.authOK=authstatus;
+
+        write(authDB.player[authDB.n_players].fd,&newUser, sizeof(user));
         authDB.n_players++;
+        return;
     }
     else if(authstatus<0)
         printf("ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
@@ -223,9 +227,9 @@ void authclient(int clientpid){
         printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
 
 
-    newUser.pid=getpid();
+
     newUser.authOK=authstatus;
-    write(cPipeFd,&newUser, sizeof(user));
+    write(authDB.player[authDB.n_players].fd,&newUser, sizeof(user));
 }
 
 void *listenclients(void *ptr){
