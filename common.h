@@ -9,4 +9,17 @@ void print_lvl(level map){
             printf("%c",map.terrain[i][j]);
 }
 
+void initncurses() {
+    initscr();
+    keypad(stdscr, TRUE); // Enable arrow keys
+    start_color();
+
+    init_color(COLOR_BRICK, 600, 600, 600);
+    init_color(COLOR_BLACK, 0, 0, 0);
+    init_pair(1, COLOR_BRICK, COLOR_GREEN);
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+}
+
+
+
 #endif //BOMBERC_COMMON_H

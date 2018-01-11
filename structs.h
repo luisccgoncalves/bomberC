@@ -7,7 +7,9 @@
 #define LVL_H       23              //map height
 #define S_PIPE      "/tmp/sPipe"    //Path and filename of server pipe
 #define C_PIPE      "/tmp/cPipe"    //Path and file prefix of a client pipe
-#define DEFLVL_PATH "default.lvl"
+#define DEFLVL_PATH "default.lvl"   //Path and filename to default map
+#define NWIN        3               //Number of subwindows in ncurses
+#define COLOR_BRICK 9               //Custom brick color
 
 typedef struct {                    //sent from client to server with auth request
     int     pid;                    //creates a unique pipe to callback
@@ -83,6 +85,5 @@ typedef struct{
     int     structype;
     int     clientpid;
 }canary;
-
 
 #endif /* STRUCTS_H */

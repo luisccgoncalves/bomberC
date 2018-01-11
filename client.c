@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include <ncurses.h>
 
 #include "structs.h"
 #include "common.h"
