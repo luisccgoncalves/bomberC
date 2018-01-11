@@ -39,6 +39,7 @@ void gracefullexit(){
     close(cPipeFd);
     unlink(clt_pipe);
 
+    printf("Exiting...");
     exit(0);
 }
 
@@ -76,13 +77,13 @@ void openpipe(char *pipename){
     if(!strcmp(S_PIPE,pipename)){
 
         sPipeFd=open(pipename,O_RDWR);
-        if(sPipeFd==0)
+        if(sPipeFd<0)
             error(-1,0,"ERROR - Could not open pipe.");
     }
     else {
 
         cPipeFd=open(pipename, O_RDWR);
-        if(cPipeFd==0)
+        if(cPipeFd<0)
             error(-1,0,"ERROR - Could not open pipe.");
     }
 

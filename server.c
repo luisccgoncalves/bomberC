@@ -146,13 +146,6 @@ void print_game_info(){
     printf("\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n");
 }
 
-void load_map(char *mapname, level *map){
-
-    printf("Loading %s...\n",mapname);
-
-
-}
-
 int load_file2db( char *filename, db *usersdb){
 
     int i=0;
@@ -234,7 +227,7 @@ void authclient(int clientpid){
     //waits for the client to create a pipe (has a timeout in case of client crash)
 
     authDB.player[authDB.n_players].fd=open(buffer,O_RDWR);
-    if(authDB.player[authDB.n_players].fd==0)
+    if(authDB.player[authDB.n_players].fd<0)
         error(-1,0,"ERROR - Could not open pipe.");
 
     authstatus=userAuth(newUser);
@@ -284,25 +277,31 @@ void *listenclients(void *ptr){
     }
 }
 
-level load_level(char *filename){
+level load_level(char *filename, level map){
 
-    int fd, bytes;
+    int fd;
     level buffer;
     char lline[USR_LINE];
 
     fd=open(filename,O_RDONLY);
-    if(fd==0)
-        error(-1,0,"ERROR - Could not open %s", filename);
+    if(fd<0) {
+        printf("Could not open map \"%s\"\n", filename);
+        return map;
+    }
 
-    bytes=read(fd,&buffer.terrain, sizeof(char)*LVL_H*LVL_W);
-    bytes=read(fd,&lline, sizeof(lline));
+    if(read(fd,&buffer.terrain, sizeof(char)*LVL_H*LVL_W)>0) {
+        if (read(fd, &lline, sizeof(lline))>0) {
+            sscanf(lline, "%d %d %d %d",
+                   &buffer.n_obj, &buffer.n_enemies, &buffer.exit[0], &buffer.exit[1]);
+            printf("Loaded map name: %s\n", filename);
+            return buffer;
+        }
+    }
+    else
+        printf("No map was loaded.\nCheck map structure\n");
 
-    sscanf(lline,"%d %d %d %d",
-            &buffer.n_obj,&buffer.n_enemies,&buffer.exit[0],&buffer.exit[1]);
-
-    printf("Loaded map name: %s\n", filename);
     close(fd);
-    return buffer;
+    return map;
 }
 
 void print_lvl(level map){
@@ -319,7 +318,6 @@ int main(int argc, char** argv) {
     int         arg_n;              //Custom shell argc equivalent
     char        uinput[USR_LINE];
     char        args[3][USR_TAM];   //Custom shell argv equivalent
-    level       deflvl;
     level       map;
     pthread_t   listen;
     authDB.n_players=0;
@@ -341,12 +339,12 @@ int main(int argc, char** argv) {
         if(mkfifo(S_PIPE, 0666)<0)
             error(-1,0,"ERROR - Could not create pipe.");
     authDB.sPipeFd=open(S_PIPE, O_RDWR);
-    if(authDB.sPipeFd==0)
+    if(authDB.sPipeFd<0)
         error(-1,0,"ERROR - Could not open pipe.");
 
 //====================================================================================
 
-    deflvl=load_level(DEFLVL_PATH);
+    map=load_level(DEFLVL_PATH, map);
 
     if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
         error(-1,0,"ERROR - Error creating thread");
@@ -368,7 +366,8 @@ int main(int argc, char** argv) {
             shutdown();
 
         else if(!strcmp(args[0],"start")&&arg_n==1)
-            start();
+            //start();
+            print_lvl(map);
 
         else if(!strcmp(args[0],"add")&&arg_n==3)
             authDB.userdb_size=add_user(args[1],args[2],authDB.userdb,authDB.userdb_size, argv[1]);
@@ -384,7 +383,7 @@ int main(int argc, char** argv) {
             print_game_info();
 
         else if(!strcmp(args[0],"map")&&arg_n==2)
-            load_map(args[1], &map);
+            map=load_level(args[1], map);
 
         else
             printf("Command not found or missing arguments. Try 'help'.\n");
