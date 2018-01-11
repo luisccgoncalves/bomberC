@@ -23,15 +23,16 @@ WINDOW      *custwin[NWIN];
 //############################################
 
 void printhelp(){
-    printf("ACCEPTED INSTRUCTIONS:\n");
-    printf("    exit: Aborts the program\n");
-    printf("    shutdown: Ends a game\n");
-    printf("    start: Starts a game with all logged players\n");
-    printf("    add [username] [password]: Creates a new username\n");
-    printf("    users: Lists logged in users.\n");
-    printf("    kick [username]: Kicks a player out of a game.\n");
-    printf("    game: Shows relevant information about the current game.\n");
-    printf("    map [filename]: Loads a new map from file.\n");
+    wprintw(custwin[3],"ACCEPTED INSTRUCTIONS:\n");
+    wprintw(custwin[3],"    exit: Aborts the program\n");
+    wprintw(custwin[3],"    shutdown: Ends a game\n");
+    wprintw(custwin[3],"    start: Starts a game with all logged players\n");
+    wprintw(custwin[3],"    add [username] [password]: Creates a new username\n");
+    wprintw(custwin[3],"    users: Lists logged in users.\n");
+    wprintw(custwin[3],"    kick [username]: Kicks a player out of a game.\n");
+    wprintw(custwin[3],"    game: Shows relevant information about the current game.\n");
+    wprintw(custwin[3],"    map [filename]: Loads a new map from file.\n");
+    wrefresh(custwin[3]);
 }
 
 void shutdown(){
@@ -74,7 +75,9 @@ void signal_handler(int signum){
 
     if((signum==SIGINT)||(signum==SIGUSR1)){
         gracefullexit();
-        printf("\nReceived signal %d.\nSHUTTING DOWN.\n",signum);
+        wprintw(custwin[2],"\nReceived signal %d.\nSHUTTING DOWN.\n",signum);
+        wrefresh(custwin[2]);
+        endncurses(custwin);
         exit(0);
     }
 }
@@ -180,8 +183,8 @@ int load_file2db( char *filename, db *usersdb){
     while((fscanf(fd,"%[^':']::%s\n",usersdb[i].user,usersdb[i].passwd))!=EOF)
         i++;
 
-    printf("Successfully loaded %d users.\n",i);
-
+    wprintw(custwin[2],"Successfully loaded %d users.\n",i);
+    wrefresh(custwin[2]);
     fclose(fd);
 
     return i;
@@ -320,7 +323,8 @@ level load_level(char *filename, level map){
 
     fd=open(filename,O_RDONLY);
     if(fd<0) {
-        printf("Could not open map \"%s\"\n", filename);
+        wprintw(custwin[2],"Could not open map \"%s\"\n", filename);
+        wrefresh(custwin[2]);
         return map;
     }
 
@@ -330,12 +334,15 @@ level load_level(char *filename, level map){
                    &buffer.n_obj, &buffer.n_enemies, &buffer.exit[0], &buffer.exit[1]);
             if(!strcmp(filename,DEFLVL_PATH))
                 buffer=load_defaultenv(buffer);
-            printf("Loaded map name: %s\n", filename);
+            wprintw(custwin[2],"Loaded map name: %s\n", filename);
+            wrefresh(custwin[2]);
             return buffer;
         }
     }
-    else
-        printf("No map was loaded.\nCheck map structure\n");
+    else {
+        wprintw(custwin[2], "No map was loaded.\nCheck map structure\n");
+        wrefresh(custwin[2]);
+    }
 
     close(fd);
     return map;
@@ -360,10 +367,8 @@ int main(int argc, char** argv) {
     wbkgd(custwin[1],COLOR_PAIR(1));
     wbkgd(custwin[2],COLOR_PAIR(2));
     wbkgd(custwin[3],COLOR_PAIR(2));
-    wrefresh(custwin[1]);
-    wrefresh(custwin[2]);
-    wrefresh(custwin[3]);
-/*
+    refreshall(custwin, NWIN);
+
 
     //Gets max players from environment variable, if missing, defaults to 20
     authDB.max_players=getenv("NMAXPLAY")?atoi(getenv("NMAXPLAY")):20;
@@ -398,11 +403,13 @@ int main(int argc, char** argv) {
     if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
         error(-1,0,"ERROR - Error creating thread");
 
-    printf("Type 'help' for help and 'exit' to abort.\n");
+    wprintw(custwin[3],"Type 'help' for help and 'exit' to abort.\n");
+
     while(running)
     {
-        printf("bomber#>");
-        scanf(" %1023[^\n]s",uinput);
+        wprintw(custwin[3],"bomber#>");
+        wscanw(custwin[3]," %1023[^\n]s",uinput);
+        wrefresh(custwin[3]);
         arg_n=sscanf(uinput,"%s %s %s",args[0],args[1],args[2]);
 
         if(!strcmp(args[0],"exit"))
@@ -433,15 +440,16 @@ int main(int argc, char** argv) {
         else if(!strcmp(args[0],"map")&&arg_n==2)
             map=load_level(args[1], map);
 
-        else
-            printf("Command not found or missing arguments. Try 'help'.\n");
-
+        else {
+            wprintw(custwin[3], "Command not found or missing arguments. Try 'help'.\n");
+            wrefresh(custwin[3]);
+        }
     }
 
     gracefullexit(authDB.sPipeFd);
 
     pthread_join(listen, NULL);
-*/
+
 
     endncurses(custwin);
 

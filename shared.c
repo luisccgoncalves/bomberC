@@ -34,3 +34,9 @@ void endncurses(WINDOW *custwin[]){
 
     endwin();
 }
+
+void refreshall(WINDOW *winarray[], int nwin){
+    int i;
+    for(i=0;i<nwin;i++)
+        wrefresh(winarray[i]);
+}
