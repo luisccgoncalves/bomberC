@@ -291,6 +291,15 @@ void *listenclients(void *ptr){
         }
     }
 }
+level load_defaultenv(level defmap){
+
+    srand(time(NULL));
+
+    //If no enviroment variable is set, a random value [5,20] is generated
+    defmap.n_obj=(getenv("NOBJECT")!=NULL)?atoi(getenv("NOBJECT")):rand()%15+5;
+    defmap.n_enemies=(getenv("NENEMY")!=NULL)?atoi(getenv("NENEMY")):rand()%15+5;
+
+}
 
 level load_level(char *filename, level map){
 
@@ -308,6 +317,8 @@ level load_level(char *filename, level map){
         if (read(fd, &lline, sizeof(lline))>0) {
             sscanf(lline, "%d %d %d %d",
                    &buffer.n_obj, &buffer.n_enemies, &buffer.exit[0], &buffer.exit[1]);
+            if(!strcmp(filename,DEFLVL_PATH))
+                buffer=load_defaultenv(buffer);
             printf("Loaded map name: %s\n", filename);
             return buffer;
         }
@@ -333,24 +344,27 @@ int main(int argc, char** argv) {
     signal(SIGINT, signal_handler);
     signal(SIGUSR1, signal_handler);
 
-
-    if(argc>1)
-        authDB.userdb_size=load_file2db(argv[1], authDB.userdb);
-    else
-        error(-1,0,"ERROR - Please specify userfile.");
-
-
 //================================================================= CREATES SERVER PIPE
 
-    if(access(S_PIPE, F_OK)==-1)
-        if(mkfifo(S_PIPE, 0666)<0)
-            error(-1,0,"ERROR - Could not create pipe.");
+    if(access(S_PIPE, F_OK)==-1) {
+        if (mkfifo(S_PIPE, 0666) < 0)
+            error(-1, 0, "ERROR - Could not create pipe.");
+    }
+    else
+        error(-1, 0, "ERROR - Only one server instance permitted");
+
     authDB.sPipeFd=open(S_PIPE, O_RDWR);
     if(authDB.sPipeFd<0)
         error(-1,0,"ERROR - Could not open pipe.");
 
 //====================================================================================
 
+    if(argc>1)
+        authDB.userdb_size=load_file2db(argv[1], authDB.userdb);
+    else
+        error(-1,0,"ERROR - Please specify userfile.");
+
+    //Load the default map from the file default.lvl
     map=load_level(DEFLVL_PATH, map);
 
     if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
