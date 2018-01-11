@@ -23,16 +23,18 @@ WINDOW      *custwin[NWIN];
 //############################################
 
 void printhelp(){
-    wprintw(custwin[3],"ACCEPTED INSTRUCTIONS:\n");
-    wprintw(custwin[3],"    exit: Aborts the program\n");
-    wprintw(custwin[3],"    shutdown: Ends a game\n");
-    wprintw(custwin[3],"    start: Starts a game with all logged players\n");
-    wprintw(custwin[3],"    add [username] [password]: Creates a new username\n");
-    wprintw(custwin[3],"    users: Lists logged in users.\n");
-    wprintw(custwin[3],"    kick [username]: Kicks a player out of a game.\n");
-    wprintw(custwin[3],"    game: Shows relevant information about the current game.\n");
-    wprintw(custwin[3],"    map [filename]: Loads a new map from file.\n");
-    wrefresh(custwin[3]);
+    wclear(custwin[1]);
+    wmove(custwin[1],5,1);
+    wprintw(custwin[1],"ACCEPTED INSTRUCTIONS:\n");
+    wprintw(custwin[1],"    exit: Aborts the program\n");
+    wprintw(custwin[1],"    shutdown: Ends a game\n");
+    wprintw(custwin[1],"    start: Starts a game with all logged players\n");
+    wprintw(custwin[1],"    add [username] [password]: Creates new user\n");
+    wprintw(custwin[1],"    users: Lists logged in users\n");
+    wprintw(custwin[1],"    kick [username]: Kicks a player of a game\n");
+    wprintw(custwin[1],"    game: Shows information about current game\n");
+    wprintw(custwin[1],"    map [filename]: Loads a new map from file.\n");
+    wrefresh(custwin[1]);
 }
 
 void shutdown(){
@@ -367,6 +369,9 @@ int main(int argc, char** argv) {
     wbkgd(custwin[1],COLOR_PAIR(1));
     wbkgd(custwin[2],COLOR_PAIR(2));
     wbkgd(custwin[3],COLOR_PAIR(2));
+    scrollok(custwin[2],TRUE);
+    scrollok(custwin[3],TRUE);
+
     refreshall(custwin, NWIN);
 
 
