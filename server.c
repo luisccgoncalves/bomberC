@@ -38,6 +38,11 @@ void shutdown(){
 
 void start(level map){
 
+    if (authDB.n_players<1){
+        printf("No players to start the game.\n");
+        return;
+    }
+
     int i;
     canary header;
     header.structype=3;
