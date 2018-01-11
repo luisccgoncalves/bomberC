@@ -12,7 +12,7 @@
 #include <ncurses.h>
 
 #include "structs.h"
-#include "common.h"
+#include "shared.c"
 
 //############################################ GLOBAL VARIABLES
 
@@ -341,16 +341,7 @@ level load_level(char *filename, level map){
     return map;
 }
 
-void endncurses(){
-    int i;
 
-    for(i=0;i<NWIN;i++){
-        wgetch(custwin[i]);
-        delwin(custwin[i]);
-    }
-
-    endwin();
-}
 
 int main(int argc, char** argv) {
 
@@ -366,9 +357,6 @@ int main(int argc, char** argv) {
     custwin[1]=newwin(23,50,0,0);
     custwin[2]=newwin(23,30,0,51);
     custwin[3]=newwin(7,80,24,0);
-    wprintw(custwin[1],"Hello, World.Hello, World.Hello, World.Hello, World.");
-    wprintw(custwin[2],"Hello, World.Hello, World.Hello, World.Hello, World.");
-    wprintw(custwin[3],"Hello, World.Hello, World.Hello, World.Hello, World.");
     wbkgd(custwin[1],COLOR_PAIR(1));
     wbkgd(custwin[2],COLOR_PAIR(2));
     wbkgd(custwin[3],COLOR_PAIR(2));
@@ -455,7 +443,7 @@ int main(int argc, char** argv) {
     pthread_join(listen, NULL);
 */
 
-    endncurses();
+    endncurses(custwin);
 
     return (EXIT_SUCCESS);
 }

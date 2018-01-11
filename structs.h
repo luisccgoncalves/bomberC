@@ -10,6 +10,7 @@
 #define DEFLVL_PATH "default.lvl"   //Path and filename to default map
 #define NWIN        3               //Number of subwindows in ncurses
 #define COLOR_BRICK 9               //Custom brick color
+#define COLOR_MYGREEN 10            //Custom phosphore green color
 
 typedef struct {                    //sent from client to server with auth request
     int     pid;                    //creates a unique pipe to callback
@@ -85,5 +86,6 @@ typedef struct{
     int     structype;
     int     clientpid;
 }canary;
+
 
 #endif /* STRUCTS_H */

@@ -12,12 +12,13 @@
 #include <ncurses.h>
 
 #include "structs.h"
-#include "common.h"
+#include "shared.c"
 
 //############################################ GLOBAL VARIABLES
 
 int sPipeFd, cPipeFd;
 int ServerPID=0;
+WINDOW      *custwin[NWIN];
 
 //############################################
 
