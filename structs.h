@@ -14,6 +14,13 @@ typedef struct {                    //sent from client to server with auth reque
     char    user[USR_TAM];
     char    passwd[USR_TAM];
     int     authOK;
+
+    //authOK has the following values
+    //-1- authentication not OK
+    // 0- initial state
+    // 1- authentication OK
+    // 2- deauth request
+    // 3- server is full
 }user;
 
 typedef struct {                    //used to create an array usernames and password
@@ -62,11 +69,18 @@ typedef struct{
     int     userdb_size;
     db      userdb[100];
     int     n_players;
+    int     max_players;
     bomber  player[20];
 }database;
 
-typedef struct{         //warns the server what's the next structure type
-    int     structype;  //1- struct user
+typedef struct{
+    //warns the server what's the next structure type
+    //-1- kill thread
+    // 1- struct user
+    // 2- receive (char buffer[USR_TAM]) with kick reason
+    // 3- struct level
+
+    int     structype;
     int     clientpid;
 }canary;
 

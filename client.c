@@ -28,7 +28,7 @@ void gracefullexit(){
 
     header.structype=1;         //populates the header struct
     header.clientpid=getpid();
-    deauth.authOK=-1;           //populates the struct with deauth warning
+    deauth.authOK=2;           //populates the struct with deauth warning
     deauth.pid=header.clientpid;
 
     //warns the server this client is going down
@@ -114,6 +114,10 @@ user login(user newUser){
 
         if(newUser.authOK<1)
             printf("Wrong username or password.\n");
+        else if (newUser.authOK==3) {
+            printf("Server is full.\n");
+            gracefullexit();
+        }
         else
             printf("Welcome %s.\n",newUser.user);
     }

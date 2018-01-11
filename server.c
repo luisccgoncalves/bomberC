@@ -228,7 +228,7 @@ void authclient(int clientpid){
             break;
     }
 
-    if (newUser.authOK==-1) {
+    if (newUser.authOK==2) {
         userDeauth(newUser);
         return;
     }
@@ -244,6 +244,14 @@ void authclient(int clientpid){
 
     if(authDB.player[authDB.n_players].fd<0)
         error(-1,0,"ERROR - Could not open pipe.");
+
+    //Server is full
+    if(authDB.n_players==authDB.max_players){
+        newUser.authOK=3;
+        write(authDB.player[authDB.n_players].fd,&newUser, sizeof(user));
+        return;
+    }
+
 
     authstatus=userAuth(newUser);
     if(authstatus>0) {     //If user authenticates
@@ -295,10 +303,11 @@ level load_defaultenv(level defmap){
 
     srand(time(NULL));
 
-    //If no enviroment variable is set, a random value [5,20] is generated
+    //If no environment variable is set, a random value [5,20] is generated
     defmap.n_obj=(getenv("NOBJECT")!=NULL)?atoi(getenv("NOBJECT")):rand()%15+5;
     defmap.n_enemies=(getenv("NENEMY")!=NULL)?atoi(getenv("NENEMY")):rand()%15+5;
 
+    return defmap;
 }
 
 level load_level(char *filename, level map){
@@ -339,6 +348,9 @@ int main(int argc, char** argv) {
     level       map;
     pthread_t   listen;
     authDB.n_players=0;
+
+    //Gets max players from environment variable, if missing, defaults to 20
+    authDB.max_players=getenv("NMAXPLAY")?atoi(getenv("NMAXPLAY")):20;
 
     setbuf(stdout, NULL);
     signal(SIGINT, signal_handler);
