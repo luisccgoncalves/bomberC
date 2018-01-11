@@ -11,6 +11,7 @@
 #include <fcntl.h>
 
 #include "structs.h"
+#include "common.h"
 
 //############################################ GLOBAL VARIABLES
 
@@ -35,8 +36,16 @@ void shutdown(){
 
 }
 
-void start(){
+void start(level map){
 
+    int i;
+    canary header;
+    header.structype=3;
+
+    for(i=0;i<authDB.n_players;i++) {
+        write(authDB.player[i].fd, &header ,sizeof(header));
+        write(authDB.player[i].fd, &map ,sizeof(map));
+    }
 }
 
 void gracefullexit(){
@@ -227,6 +236,7 @@ void authclient(int clientpid){
     //waits for the client to create a pipe (has a timeout in case of client crash)
 
     authDB.player[authDB.n_players].fd=open(buffer,O_RDWR);
+
     if(authDB.player[authDB.n_players].fd<0)
         error(-1,0,"ERROR - Could not open pipe.");
 
@@ -304,14 +314,6 @@ level load_level(char *filename, level map){
     return map;
 }
 
-void print_lvl(level map){
-
-    int i,j;
-    for(i=0;i<LVL_W;i++)
-        for(j=0;j<LVL_H;j++)
-            printf("%c",map.terrain[i][j]);
-}
-
 int main(int argc, char** argv) {
 
     int         running=1;
@@ -366,8 +368,7 @@ int main(int argc, char** argv) {
             shutdown();
 
         else if(!strcmp(args[0],"start")&&arg_n==1)
-            //start();
-            print_lvl(map);
+            start(map);
 
         else if(!strcmp(args[0],"add")&&arg_n==3)
             authDB.userdb_size=add_user(args[1],args[2],authDB.userdb,authDB.userdb_size, argv[1]);

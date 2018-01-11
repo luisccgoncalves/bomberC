@@ -1,4 +1,3 @@
-#include "structs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +9,9 @@
 #include <signal.h>
 #include <pthread.h>
 #include <fcntl.h>
+
+#include "structs.h"
+#include "common.h"
 
 //############################################ GLOBAL VARIABLES
 
@@ -39,7 +41,7 @@ void gracefullexit(){
     close(cPipeFd);
     unlink(clt_pipe);
 
-    printf("Exiting...");
+    printf("Exiting...\n");
     exit(0);
 }
 
@@ -128,6 +130,17 @@ void kicked(){
     gracefullexit();
 }
 
+void start_game(){
+
+    level map;
+
+    read(cPipeFd, &map, sizeof(level));
+
+    printf("Starting game.\n");
+    print_lvl(map);
+
+}
+
 void *listenserver(void *ptr){
 
     canary header;
@@ -146,6 +159,8 @@ void *listenserver(void *ptr){
             case 2:  //client will receive kick reason
                 kicked();
                 break;
+            case 3:  //client will receive map and start the game
+                start_game();
 
         }
     }
