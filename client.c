@@ -49,9 +49,8 @@ void gracefullexit(){
 void signal_handler(int signum){
 
     if(signum==SIGINT){
-        //wprintw(custwin[2],"\nSHUTTING DOWN.\n");
-        //wrefresh(custwin[2]);
         gracefullexit();
+        printf("Received SIGNAL %d\nSHUTTING DOWN.\n",signum);
         exit(0);
     }
 }
@@ -94,6 +93,16 @@ void openpipe(char *pipename){
 
 }
 
+void print_lvl(level map, winl *win){
+
+    int i,j;
+    wclear(win->lwin);
+    for(i=0;i<LVL_W;i++)
+        for(j=0;j<LVL_H;j++)
+            wprintw(win->lwin,"%c",map.terrain[i][j]);
+    wrefresh(win->lwin);
+}
+
 user login(user newUser, winl win){
 
     canary header;
@@ -132,38 +141,38 @@ user login(user newUser, winl win){
             wrefresh(win.rwin);
         }
     }
-    wprintw(win.foot,"000");
-    wrefresh(win.foot);
     return newUser;
 }
 
-/*void kicked(void *ptr){
+void kicked(void *ptr){
 
     char buffer[USR_TAM];
 
-    WINDOW *custwin[3]={ptr,ptr+sizeof(WINDOW),ptr+ sizeof(WINDOW)*2};
+    winl *win= (winl *)ptr;
 
     read(cPipeFd, &buffer, sizeof(buffer));
-    wprintw(custwin[2],"\nYou got kicked!\nReason: %s\n",buffer);
-    wrefresh(custwin[2]);
+    wprintw(win->foot,"\nYou got kicked!\nReason: %s\nQuitting in 5 seconds.\n",buffer);
+    wrefresh(win->foot);
+    sleep(5);
     gracefullexit();
     exit(0);
-}*/
+}
 
-/*void start_game(WINDOW *custwin[]){
+void start_game(winl *win){
 
     level map;
 
     read(cPipeFd, &map, sizeof(level));
 
-    wprintw(custwin[2],"Starting game.\n");
-    wrefresh(custwin[2]);
-    print_lvl(map, custwin);
+    wprintw(win->foot,"Starting game.\n");
+    wrefresh(win->foot);
+    print_lvl(map, win);
 
-}*/
+}
 
 void *listenserver(void *ptr){
 
+    //No need to cast ptr, this function will only pass it through
     canary header;
     header.structype=1;
 
@@ -178,13 +187,27 @@ void *listenserver(void *ptr){
             case 1:  //not used
                 break;
             case 2:  //client will receive kick reason
-                //kicked(ptr);
+                kicked(ptr);
                 break;
-            //case 3:  //client will receive map and start the game
-                //start_game(ptr);
+            case 3:  //client will receive map and start the game
+                start_game(ptr);
 
         }
     }
+}
+
+void refreshall(winl *win){
+
+    wrefresh(win->lwin);
+    wrefresh(win->rwin);
+    wrefresh(win->foot);
+}
+
+void endncurses(winl *win){
+
+    delwin(win->lwin);
+    delwin(win->rwin);
+    delwin(win->foot);
 }
 
 int main(int argc, char** argv) {
@@ -208,10 +231,8 @@ int main(int argc, char** argv) {
     scrollok(win.rwin,TRUE);
     scrollok(win.foot,TRUE);
 
-    //refreshall(custwin, NWIN);
-    wrefresh(win.lwin);
-    wrefresh(win.rwin);
-    wrefresh(win.foot);
+    refreshall(&win);
+
 
     setbuf(stdout, NULL);
     signal(SIGINT, signal_handler);
@@ -227,11 +248,8 @@ int main(int argc, char** argv) {
 
     newUser=login(newUser,win);
 
-    wprintw(win.foot,"111");
-    wrefresh(win.foot);
-
-//    if(pthread_create(&listen,NULL, listenserver, (void *)custwin)!=0)
-//        error(-1,0,"ERROR - Error creating thread");
+    if(pthread_create(&listen,NULL, listenserver, (void *)&win)!=0)
+        error(-1,0,"ERROR - Error creating thread");
 
     while(running) {
         wprintw(win.foot,"bomber#>");
@@ -243,10 +261,8 @@ int main(int argc, char** argv) {
             running = 0;
     }
 
-    //endncurses(win.lwin, win.rwin, win.foot);
-    delwin(win.lwin);
-    delwin(win.rwin);
-    delwin(win.foot);
+    endncurses(&win);
+
     gracefullexit();
 
     return (EXIT_SUCCESS);
