@@ -3,12 +3,13 @@
 //
 
 
-void print_lvl(level map){
+void print_lvl(level map, WINDOW *winarray[]){
 
     int i,j;
     for(i=0;i<LVL_W;i++)
         for(j=0;j<LVL_H;j++)
-            printf("%c",map.terrain[i][j]);
+            wprintw(winarray[0],"%c",map.terrain[i][j]);
+    wrefresh(winarray[0]);
 }
 
 void initncurses() {
@@ -24,12 +25,12 @@ void initncurses() {
     init_pair(2, COLOR_MYGREEN, COLOR_BLACK);   //Pair for text windows
 }
 
-void endncurses(WINDOW *custwin[]){
+void endncurses(WINDOW *winarray[]){
     int i;
 
     for(i=0;i<NWIN;i++){
-        wgetch(custwin[i]);
-        delwin(custwin[i]);
+        wgetch(winarray[i]);
+        delwin(winarray[i]);
     }
 
     endwin();

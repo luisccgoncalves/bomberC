@@ -23,35 +23,35 @@ WINDOW      *custwin[NWIN];
 //############################################
 
 void printhelp(){
-    wclear(custwin[1]);
-    wmove(custwin[1],5,1);
-    wprintw(custwin[1],"ACCEPTED INSTRUCTIONS:\n");
-    wprintw(custwin[1],"    exit: Aborts the program\n");
-    wprintw(custwin[1],"    shutdown: Ends a game\n");
-    wprintw(custwin[1],"    start: Starts a game with all logged players\n");
-    wprintw(custwin[1],"    add [username] [password]: Creates new user\n");
-    wprintw(custwin[1],"    users: Lists logged in users\n");
-    wprintw(custwin[1],"    kick [username]: Kicks a player of a game\n");
-    wprintw(custwin[1],"    game: Shows information about current game\n");
-    wprintw(custwin[1],"    map [filename]: Loads a new map from file.\n");
-    wrefresh(custwin[1]);
+    wclear(custwin[0]);
+    wmove(custwin[0],5,1);
+    wprintw(custwin[0],"ACCEPTED INSTRUCTIONS:\n");
+    wprintw(custwin[0],"    exit: Aborts the program\n");
+    wprintw(custwin[0],"    shutdown: Ends a game\n");
+    wprintw(custwin[0],"    start: Starts a game with all logged players\n");
+    wprintw(custwin[0],"    add [username] [password]: Creates new user\n");
+    wprintw(custwin[0],"    users: Lists logged in users\n");
+    wprintw(custwin[0],"    kick [username]: Kicks a player of a game\n");
+    wprintw(custwin[0],"    game: Shows information about current game\n");
+    wprintw(custwin[0],"    map [filename]: Loads a new map from file.\n");
+    wrefresh(custwin[0]);
 }
 
 void printbomb(){
-    wclear(custwin[1]);
-    wmove(custwin[1],5,0);
-    wprintw(custwin[1],"        ,--.!,\n");
-    wprintw(custwin[1],"     __/   -*-\n");
-    wprintw(custwin[1],"   ,d08b.  '|`\n");
-    wprintw(custwin[1],"   0088MM \n");
-    wprintw(custwin[1],"   `9MMP' \n");
-    wprintw(custwin[1],"  _                     _                _____\n");
-    wprintw(custwin[1]," | |                   | |              / ____|\n");
-    wprintw(custwin[1]," | |__   ___  _ __ ___ | |__   ___ _ __| |     \n");
-    wprintw(custwin[1]," | '_ \\ / _ \\| '_ ` _ \\| '_ \\ / _ | '__| |     \n");
-    wprintw(custwin[1]," | |_) | (_) | | | | | | |_) |  __| |  | |____\n");
-    wprintw(custwin[1]," |_.__/ \\___/|_| |_| |_|_.__/ \\___|_|   \\_____|\n");
-    wrefresh(custwin[1]);
+    wclear(custwin[0]);
+    wmove(custwin[0],5,0);
+    wprintw(custwin[0],"        ,--.!,\n");
+    wprintw(custwin[0],"     __/   -*-\n");
+    wprintw(custwin[0],"   ,d08b.  '|`\n");
+    wprintw(custwin[0],"   0088MM \n");
+    wprintw(custwin[0],"   `9MMP' \n");
+    wprintw(custwin[0],"  _                     _                _____\n");
+    wprintw(custwin[0]," | |                   | |              / ____|\n");
+    wprintw(custwin[0]," | |__   ___  _ __ ___ | |__   ___ _ __| |     \n");
+    wprintw(custwin[0]," | '_ \\ / _ \\| '_ ` _ \\| '_ \\ / _ | '__| |     \n");
+    wprintw(custwin[0]," | |_) | (_) | | | | | | |_) |  __| |  | |____\n");
+    wprintw(custwin[0]," |_.__/ \\___/|_| |_| |_|_.__/ \\___|_|   \\_____|\n");
+    wrefresh(custwin[0]);
 }
 
 void shutdown(){
@@ -61,8 +61,8 @@ void shutdown(){
 void start(level map){
 
     if (authDB.n_players<1){
-        wprintw(custwin[2],"No players to start the game.\n");
-        wrefresh(custwin[2]);
+        wprintw(custwin[1],"No players to start the game.\n");
+        wrefresh(custwin[1]);
         return;
     }
 
@@ -95,8 +95,8 @@ void signal_handler(int signum){
 
     if((signum==SIGINT)||(signum==SIGUSR1)){
         gracefullexit();
-        wprintw(custwin[2],"\nReceived signal %d.\nSHUTTING DOWN.\n",signum);
-        wrefresh(custwin[2]);
+        wprintw(custwin[1],"\nReceived signal %d.\nSHUTTING DOWN.\n",signum);
+        wrefresh(custwin[1]);
         endncurses(custwin);
         exit(0);
     }
@@ -105,15 +105,15 @@ void signal_handler(int signum){
 int add_user(char *user, char *passwd, db *usersdb, int i, char *filename){
 
     if(strchr(user,':')){
-        wprintw(custwin[2],"Username can't contain the character ':'. Try again.\n");
-        wrefresh(custwin[2]);
+        wprintw(custwin[1],"Username can't contain the character ':'. Try again.\n");
+        wrefresh(custwin[1]);
         return i;
     }
 
     for(int n=0;n<=i;n++){
         if(!strcmp(user,usersdb[n].user)){
-            wprintw(custwin[2],"Username already exists.\n");
-            wrefresh(custwin[2]);
+            wprintw(custwin[1],"Username already exists.\n");
+            wrefresh(custwin[1]);
             return i;
         }
     }
@@ -139,13 +139,13 @@ void list_users(bomber *player, int n_players){
 
     int i;
 
-    wclear(custwin[1]);
-    wmove(custwin[1],5,1);
-    wprintw(custwin[1],"USERS:\n");
+    wclear(custwin[0]);
+    wmove(custwin[0],5,1);
+    wprintw(custwin[0],"USERS:\n");
     for(i=0;i<n_players;i++)
-        wprintw(custwin[1],"%d: %s\n", i+1, player[i].user);
+        wprintw(custwin[0],"%d: %s\n", i+1, player[i].user);
 
-    wrefresh(custwin[1]);
+    wrefresh(custwin[0]);
 }
 
 void kick(char *username){
@@ -153,16 +153,16 @@ void kick(char *username){
     char buffer[USR_TAM];
 
     if(!authDB.n_players) {
-        wprintw(custwin[2],"No players logged in");
-        wrefresh(custwin[2]);
+        wprintw(custwin[1],"No players logged in");
+        wrefresh(custwin[1]);
         return;
     }
 
     for(i=0;i<authDB.n_players;i++)
         if(!strcmp(username,authDB.player[i].user)){
-            wprintw(custwin[3],"Reason: ");
-            wscanw(custwin[3]," %49[^\n]s",buffer);
-            wrefresh(custwin[3]);
+            wprintw(custwin[2],"Reason: ");
+            wscanw(custwin[2]," %49[^\n]s",buffer);
+            wrefresh(custwin[2]);
 
             header.structype=2;
 
@@ -172,27 +172,27 @@ void kick(char *username){
             return;
         }
 
-    wprintw(custwin[2],"User %s is not logged in.\n", username);
-    wrefresh(custwin[2]);
+    wprintw(custwin[1],"User %s is not logged in.\n", username);
+    wrefresh(custwin[1]);
 
 }
 
 void print_game_info(){
 
     int i;
-    wclear(custwin[1]);
-    wmove(custwin[1],5,0);
-    wprintw(custwin[1],"\t\xc9\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbb\n");
-    wprintw(custwin[1],"\t\xba Name\t\xba Pts\t\xba\n");
-    wprintw(custwin[1],"\t\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xce\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9\n");
+    wclear(custwin[0]);
+    wmove(custwin[0],5,0);
+    wprintw(custwin[0],"\t\xc9\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbb\n");
+    wprintw(custwin[0],"\t\xba Name\t\xba Pts\t\xba\n");
+    wprintw(custwin[0],"\t\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xce\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9\n");
 
     for(i=0;i<authDB.n_players;i++)
-        wprintw(custwin[1],"\t\xba%s\t\xba %d\t\xba\n",
+        wprintw(custwin[0],"\t\xba%s\t\xba %d\t\xba\n",
                authDB.player[i].user,
                authDB.player[i].points);
 
-    wprintw(custwin[1],"\t\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n");
-    wrefresh(custwin[1]);
+    wprintw(custwin[0],"\t\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n");
+    wrefresh(custwin[0]);
 }
 
 int load_file2db( char *filename, db *usersdb){
@@ -213,8 +213,8 @@ int load_file2db( char *filename, db *usersdb){
     while((fscanf(fd,"%[^':']::%s\n",usersdb[i].user,usersdb[i].passwd))!=EOF)
         i++;
 
-    wprintw(custwin[2],"Successfully loaded %d users.\n",i);
-    wrefresh(custwin[2]);
+    wprintw(custwin[1],"Successfully loaded %d users.\n",i);
+    wrefresh(custwin[1]);
     fclose(fd);
 
     return i;
@@ -241,8 +241,8 @@ void userDeauth(user deauth){
 
     for(i=0;i<authDB.n_players;i++)
         if(authDB.player[i].pid==deauth.pid) {
-            wprintw(custwin[2],"User %s logged out.\n", authDB.player[i].user);
-            wrefresh(custwin[2]);
+            wprintw(custwin[1],"User %s logged out.\n", authDB.player[i].user);
+            wrefresh(custwin[1]);
             for(i;i<authDB.n_players;i++)
                 authDB.player[i]=authDB.player[i+1];
             authDB.n_players--;
@@ -269,8 +269,8 @@ void authclient(int clientpid){
         return;
     }
 
-    wprintw(custwin[2],"User \"%s\" is attempting to login.\n", newUser.user);
-    wrefresh(custwin[2]);
+    wprintw(custwin[1],"User \"%s\" is attempting to login.\n", newUser.user);
+    wrefresh(custwin[1]);
 
     sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
 
@@ -292,15 +292,15 @@ void authclient(int clientpid){
 
     authstatus=userAuth(newUser);
     if(authstatus>0) {     //If user authenticates
-        wprintw(custwin[2],"User\"%s\" logged in.\n", newUser.user);
+        wprintw(custwin[1],"User\"%s\" logged in.\n", newUser.user);
 
         strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
         authDB.player[authDB.n_players].pid=newUser.pid;
 
         strcpy(authDB.player[authDB.n_players].pipename,buffer);
         authDB.player[authDB.n_players].points=0;
-        wprintw(custwin[2],"Player \"%s\" created.\n",authDB.player[authDB.n_players].user);
-        wrefresh(custwin[2]);
+        wprintw(custwin[1],"Player \"%s\" created.\n",authDB.player[authDB.n_players].user);
+        wrefresh(custwin[1]);
 
         newUser.pid=getpid();
         newUser.authOK=authstatus;
@@ -310,11 +310,11 @@ void authclient(int clientpid){
         return;
     }
     else if(authstatus<0)
-        wprintw(custwin[2],"ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
+        wprintw(custwin[1],"ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
     else
-        wprintw(custwin[2],"User \"%s\" failed to login.\nbomber#>", newUser.user);
+        wprintw(custwin[1],"User \"%s\" failed to login.\nbomber#>", newUser.user);
 
-    wrefresh(custwin[2]);
+    wrefresh(custwin[1]);
 
     newUser.authOK=authstatus;
     write(authDB.player[authDB.n_players].fd,&newUser, sizeof(user));
@@ -358,8 +358,8 @@ level load_level(char *filename, level map){
 
     fd=open(filename,O_RDONLY);
     if(fd<0) {
-        wprintw(custwin[2],"Could not open map \"%s\"\n", filename);
-        wrefresh(custwin[2]);
+        wprintw(custwin[1],"Could not open map \"%s\"\n", filename);
+        wrefresh(custwin[1]);
         return map;
     }
 
@@ -369,14 +369,14 @@ level load_level(char *filename, level map){
                    &buffer.n_obj, &buffer.n_enemies, &buffer.exit[0], &buffer.exit[1]);
             if(!strcmp(filename,DEFLVL_PATH))
                 buffer=load_defaultenv(buffer);
-            wprintw(custwin[2],"Loaded map name: %s\n", filename);
-            wrefresh(custwin[2]);
+            wprintw(custwin[1],"Loaded map name: %s\n", filename);
+            wrefresh(custwin[1]);
             return buffer;
         }
     }
     else {
-        wprintw(custwin[2], "No map was loaded.\nCheck map structure\n");
-        wrefresh(custwin[2]);
+        wprintw(custwin[1], "No map was loaded.\nCheck map structure\n");
+        wrefresh(custwin[1]);
     }
 
     close(fd);
@@ -396,14 +396,14 @@ int main(int argc, char** argv) {
     authDB.n_players=0;
 
     initncurses();
-    custwin[1]=newwin(23,50,0,0);
-    custwin[2]=newwin(23,30,0,51);
-    custwin[3]=newwin(6,80,24,0);
-    wbkgd(custwin[1],COLOR_PAIR(1));
+    custwin[0]=newwin(23,50,0,0);
+    custwin[1]=newwin(23,30,0,51);
+    custwin[2]=newwin(6,80,24,0);
+    wbkgd(custwin[0],COLOR_PAIR(1));
+    wbkgd(custwin[1],COLOR_PAIR(2));
     wbkgd(custwin[2],COLOR_PAIR(2));
-    wbkgd(custwin[3],COLOR_PAIR(2));
+    scrollok(custwin[1],TRUE);
     scrollok(custwin[2],TRUE);
-    scrollok(custwin[3],TRUE);
 
     refreshall(custwin, NWIN);
 
@@ -443,13 +443,13 @@ int main(int argc, char** argv) {
 
     printbomb();
 
-    wprintw(custwin[3],"Type 'help' for help and 'exit' to abort.\n");
+    wprintw(custwin[2],"Type 'help' for help and 'exit' to abort.\n");
 
     while(running)
     {
-        wprintw(custwin[3],"bomber#>");
-        wscanw(custwin[3]," %1023[^\n]s",uinput);
-        wrefresh(custwin[3]);
+        wprintw(custwin[2],"bomber#>");
+        wscanw(custwin[2]," %1023[^\n]s",uinput);
+        wrefresh(custwin[2]);
         arg_n=sscanf(uinput,"%s %s %s",args[0],args[1],args[2]);
 
         if(!strcmp(args[0],"exit"))
@@ -481,8 +481,8 @@ int main(int argc, char** argv) {
             map=load_level(args[1], map);
 
         else {
-            wprintw(custwin[3], "Command not found or missing arguments. Try 'help'.\n");
-            wrefresh(custwin[3]);
+            wprintw(custwin[2], "Command not found or missing arguments. Try 'help'.\n");
+            wrefresh(custwin[2]);
         }
     }
 

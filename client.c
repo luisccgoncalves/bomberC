@@ -18,7 +18,6 @@
 
 int sPipeFd, cPipeFd;
 int ServerPID=0;
-WINDOW      *custwin[NWIN];
 
 //############################################
 
@@ -43,15 +42,17 @@ void gracefullexit(){
     close(cPipeFd);
     unlink(clt_pipe);
 
-    printf("Exiting...\n");
-    exit(0);
+    endwin();
+
 }
 
 void signal_handler(int signum){
 
     if(signum==SIGINT){
-        printf("\nSHUTTING DOWN.\n");
+        //wprintw(custwin[2],"\nSHUTTING DOWN.\n");
+        //wrefresh(custwin[2]);
         gracefullexit();
+        exit(0);
     }
 }
 
@@ -93,16 +94,18 @@ void openpipe(char *pipename){
 
 }
 
-user login(user newUser){
+user login(user newUser, WINDOW *custwin[]){
 
     canary header;
     newUser.authOK=0;
-    printf("bomberC\nPlease login.\n");
+    wprintw(custwin[2],"bomberC\nPlease login.\n");
     while(newUser.authOK<=0){
-        printf("user:");
-        scanf(" %49[^\n]s",newUser.user);
-        printf("pass:");
-        scanf(" %49[^\n]s",newUser.passwd);
+        wprintw(custwin[2],"user:");
+        wscanw(custwin[2]," %49[^\n]s",newUser.user);
+        wrefresh(custwin[2]);
+        wprintw(custwin[2],"pass:");
+        wscanw(custwin[2]," %49[^\n]s",newUser.passwd);
+        wrefresh(custwin[2]);
 
         header.clientpid=getpid();
         newUser.pid=getpid();
@@ -114,36 +117,48 @@ user login(user newUser){
         read(cPipeFd,&newUser,sizeof(user));
         ServerPID=newUser.pid;
 
-        if(newUser.authOK<1)
-            printf("Wrong username or password.\n");
-        else if (newUser.authOK==3) {
-            printf("Server is full.\n");
-            gracefullexit();
+        if(newUser.authOK<1) {
+            wprintw(custwin[2], "Wrong username or password.\n");
+            wrefresh(custwin[1]);
         }
-        else
-            printf("Welcome %s.\n",newUser.user);
+        else if (newUser.authOK==3) {
+            wprintw(custwin[1],"Server is full.\n");
+            wrefresh(custwin[1]);
+            gracefullexit();
+            exit(0);
+        }
+        else {
+            wprintw(custwin[1], "Welcome %s.\n", newUser.user);
+            wrefresh(custwin[1]);
+        }
     }
-
+    wprintw(custwin[2],"000");
+    wrefresh(custwin[2]);
     return newUser;
 }
 
-void kicked(){
+void kicked(void *ptr){
 
     char buffer[USR_TAM];
 
+    WINDOW *custwin[3]={ptr,ptr+sizeof(WINDOW),ptr+ sizeof(WINDOW)*2};
+
     read(cPipeFd, &buffer, sizeof(buffer));
-    printf("\nYou got kicked!\nReason: %s\n",buffer);
+    wprintw(custwin[2],"\nYou got kicked!\nReason: %s\n",buffer);
+    wrefresh(custwin[2]);
     gracefullexit();
+    exit(0);
 }
 
-void start_game(){
+void start_game(WINDOW *custwin[]){
 
     level map;
 
     read(cPipeFd, &map, sizeof(level));
 
-    printf("Starting game.\n");
-    print_lvl(map);
+    wprintw(custwin[2],"Starting game.\n");
+    wrefresh(custwin[2]);
+    print_lvl(map, custwin);
 
 }
 
@@ -163,10 +178,10 @@ void *listenserver(void *ptr){
             case 1:  //not used
                 break;
             case 2:  //client will receive kick reason
-                kicked();
+                kicked(ptr);
                 break;
             case 3:  //client will receive map and start the game
-                start_game();
+                start_game(ptr);
 
         }
     }
@@ -181,6 +196,19 @@ int main(int argc, char** argv) {
     char        args[3][USR_TAM];   //Custom shell argv equivalent
     char        buffer[USR_TAM];
     pthread_t   keepalive, listen;
+    WINDOW      *custwin[NWIN];
+
+    initncurses();
+    custwin[0]=newwin(23,50,0,0);
+    custwin[1]=newwin(23,30,0,51);
+    custwin[2]=newwin(6,80,24,0);
+    wbkgd(custwin[0],COLOR_PAIR(1));
+    wbkgd(custwin[1],COLOR_PAIR(2));
+    wbkgd(custwin[2],COLOR_PAIR(2));
+    scrollok(custwin[1],TRUE);
+    scrollok(custwin[2],TRUE);
+
+    refreshall(custwin, NWIN);
 
     setbuf(stdout, NULL);
     signal(SIGINT, signal_handler);
@@ -194,20 +222,25 @@ int main(int argc, char** argv) {
     sprintf(buffer,"%s_%d",C_PIPE,getpid());
     openpipe(buffer);    //Open Client Pipe
 
-    newUser=login(newUser);
+    newUser=login(newUser,custwin);
 
-    if(pthread_create(&listen,NULL, listenserver, NULL)!=0)
+    wprintw(custwin[2],"111");
+    wrefresh(custwin[2]);
+
+    if(pthread_create(&listen,NULL, listenserver, (void *)custwin)!=0)
         error(-1,0,"ERROR - Error creating thread");
 
     while(running) {
-        printf("bomber#>");
-        scanf(" %1023[^\n]s", uinput);
+        wprintw(custwin[2],"bomber#>");
+        wscanw(custwin[2]," %1023[^\n]s", uinput);
+        wrefresh(custwin[2]);
         arg_n = sscanf(uinput, "%s %s %s", args[0], args[1], args[2]);
 
         if (!strcmp(args[0], "exit"))
             running = 0;
     }
 
+    endncurses(custwin);
     gracefullexit();
 
     return (EXIT_SUCCESS);

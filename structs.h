@@ -8,7 +8,7 @@
 #define S_PIPE      "/tmp/sPipe"    //Path and filename of server pipe
 #define C_PIPE      "/tmp/cPipe"    //Path and file prefix of a client pipe
 #define DEFLVL_PATH "default.lvl"   //Path and filename to default map
-#define NWIN        3               //Number of subwindows in ncurses
+#define NWIN        2               //Number of subwindows in ncurses
 #define COLOR_BRICK 9               //Custom brick color
 #define COLOR_MYGREEN 10            //Custom phosphore green color
 
