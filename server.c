@@ -37,6 +37,23 @@ void printhelp(){
     wrefresh(custwin[1]);
 }
 
+void printbomb(){
+    wclear(custwin[1]);
+    wmove(custwin[1],5,1);
+    wprintw(custwin[1],"        ,--.!,\n");
+    wprintw(custwin[1],"     __/   -*-\n");
+    wprintw(custwin[1],"   ,d08b.  '|`\n");
+    wprintw(custwin[1],"   0088MM \n");
+    wprintw(custwin[1],"   `9MMP' \n");
+    wprintw(custwin[1],"  _                     _                _____\n");
+    wprintw(custwin[1]," | |                   | |              / ____|\n");
+    wprintw(custwin[1]," | |__   ___  _ __ ___ | |__   ___ _ __| |     \n");
+    wprintw(custwin[1]," | '_ \\ / _ \\| '_ ` _ \\| '_ \\ / _ | '__| |     \n");
+    wprintw(custwin[1]," | |_) | (_) | | | | | | |_) |  __| |  | |____\n");
+    wprintw(custwin[1]," |_.__/ \\___/|_| |_| |_|_.__/ \\___|_|   \\_____|\n");
+    wrefresh(custwin[1]);
+}
+
 void shutdown(){
 
 }
@@ -407,6 +424,8 @@ int main(int argc, char** argv) {
 
     if(pthread_create(&listen,NULL, listenclients, NULL)!=0)
         error(-1,0,"ERROR - Error creating thread");
+
+    printbomb();
 
     wprintw(custwin[3],"Type 'help' for help and 'exit' to abort.\n");
 
