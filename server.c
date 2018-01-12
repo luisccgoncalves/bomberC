@@ -58,6 +58,23 @@ void shutdown(){
 
 }
 
+void endncurses(WINDOW *winarray[]){
+    int i;
+
+    for(i=0;i<NWIN;i++){
+        wgetch(winarray[i]);
+        delwin(winarray[i]);
+    }
+
+    endwin();
+}
+
+void refreshall(WINDOW *winarray[], int nwin){
+    int i;
+    for(i=0;i<nwin;i++)
+        wrefresh(winarray[i]);
+}
+
 void start(level map){
 
     if (authDB.n_players<1){
@@ -310,9 +327,9 @@ void authclient(int clientpid){
         return;
     }
     else if(authstatus<0)
-        wprintw(custwin[1],"ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
+        wprintw(custwin[1],"ERROR: User \"%s\" is already logged.\n", newUser.user);
     else
-        wprintw(custwin[1],"User \"%s\" failed to login.\nbomber#>", newUser.user);
+        wprintw(custwin[1],"User \"%s\" failed to login.\n", newUser.user);
 
     wrefresh(custwin[1]);
 
@@ -384,7 +401,6 @@ level load_level(char *filename, level map){
 }
 
 
-
 int main(int argc, char** argv) {
 
     int         running=1;
@@ -397,7 +413,7 @@ int main(int argc, char** argv) {
 
     initncurses();
     custwin[0]=newwin(23,50,0,0);
-    custwin[1]=newwin(23,30,0,51);
+    custwin[1]=newwin(23,28,0,51);
     custwin[2]=newwin(6,80,24,0);
     wbkgd(custwin[0],COLOR_PAIR(1));
     wbkgd(custwin[1],COLOR_PAIR(2));

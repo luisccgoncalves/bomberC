@@ -94,18 +94,18 @@ void openpipe(char *pipename){
 
 }
 
-user login(user newUser, WINDOW *custwin[]){
+user login(user newUser, winl win){
 
     canary header;
     newUser.authOK=0;
-    wprintw(custwin[2],"bomberC\nPlease login.\n");
+    wprintw(win.foot,"bomberC\nPlease login.\n");
     while(newUser.authOK<=0){
-        wprintw(custwin[2],"user:");
-        wscanw(custwin[2]," %49[^\n]s",newUser.user);
-        wrefresh(custwin[2]);
-        wprintw(custwin[2],"pass:");
-        wscanw(custwin[2]," %49[^\n]s",newUser.passwd);
-        wrefresh(custwin[2]);
+        wprintw(win.foot,"user:");
+        wscanw(win.foot," %49[^\n]s",newUser.user);
+        wrefresh(win.foot);
+        wprintw(win.foot,"pass:");
+        wscanw(win.foot," %49[^\n]s",newUser.passwd);
+        wrefresh(win.foot);
 
         header.clientpid=getpid();
         newUser.pid=getpid();
@@ -118,26 +118,26 @@ user login(user newUser, WINDOW *custwin[]){
         ServerPID=newUser.pid;
 
         if(newUser.authOK<1) {
-            wprintw(custwin[2], "Wrong username or password.\n");
-            wrefresh(custwin[1]);
+            wprintw(win.foot, "Wrong username or password.\n");
+            wrefresh(win.foot);
         }
         else if (newUser.authOK==3) {
-            wprintw(custwin[1],"Server is full.\n");
-            wrefresh(custwin[1]);
+            wprintw(win.foot,"Server is full.\n");
+            wrefresh(win.foot);
             gracefullexit();
             exit(0);
         }
         else {
-            wprintw(custwin[1], "Welcome %s.\n", newUser.user);
-            wrefresh(custwin[1]);
+            wprintw(win.rwin, "Welcome %s.\n", newUser.user);
+            wrefresh(win.rwin);
         }
     }
-    wprintw(custwin[2],"000");
-    wrefresh(custwin[2]);
+    wprintw(win.foot,"000");
+    wrefresh(win.foot);
     return newUser;
 }
 
-void kicked(void *ptr){
+/*void kicked(void *ptr){
 
     char buffer[USR_TAM];
 
@@ -148,9 +148,9 @@ void kicked(void *ptr){
     wrefresh(custwin[2]);
     gracefullexit();
     exit(0);
-}
+}*/
 
-void start_game(WINDOW *custwin[]){
+/*void start_game(WINDOW *custwin[]){
 
     level map;
 
@@ -160,7 +160,7 @@ void start_game(WINDOW *custwin[]){
     wrefresh(custwin[2]);
     print_lvl(map, custwin);
 
-}
+}*/
 
 void *listenserver(void *ptr){
 
@@ -178,10 +178,10 @@ void *listenserver(void *ptr){
             case 1:  //not used
                 break;
             case 2:  //client will receive kick reason
-                kicked(ptr);
+                //kicked(ptr);
                 break;
-            case 3:  //client will receive map and start the game
-                start_game(ptr);
+            //case 3:  //client will receive map and start the game
+                //start_game(ptr);
 
         }
     }
@@ -196,19 +196,22 @@ int main(int argc, char** argv) {
     char        args[3][USR_TAM];   //Custom shell argv equivalent
     char        buffer[USR_TAM];
     pthread_t   keepalive, listen;
-    WINDOW      *custwin[NWIN];
+    winl        win;
 
     initncurses();
-    custwin[0]=newwin(23,50,0,0);
-    custwin[1]=newwin(23,30,0,51);
-    custwin[2]=newwin(6,80,24,0);
-    wbkgd(custwin[0],COLOR_PAIR(1));
-    wbkgd(custwin[1],COLOR_PAIR(2));
-    wbkgd(custwin[2],COLOR_PAIR(2));
-    scrollok(custwin[1],TRUE);
-    scrollok(custwin[2],TRUE);
+    win.lwin=newwin(22,49,1,1);
+    win.rwin=newwin(22,27,1,51);
+    win.foot=newwin(6,78,24,1);
+    wbkgd(win.lwin,COLOR_PAIR(1));
+    wbkgd(win.rwin,COLOR_PAIR(3));
+    wbkgd(win.foot,COLOR_PAIR(4));
+    scrollok(win.rwin,TRUE);
+    scrollok(win.foot,TRUE);
 
-    refreshall(custwin, NWIN);
+    //refreshall(custwin, NWIN);
+    wrefresh(win.lwin);
+    wrefresh(win.rwin);
+    wrefresh(win.foot);
 
     setbuf(stdout, NULL);
     signal(SIGINT, signal_handler);
@@ -222,25 +225,28 @@ int main(int argc, char** argv) {
     sprintf(buffer,"%s_%d",C_PIPE,getpid());
     openpipe(buffer);    //Open Client Pipe
 
-    newUser=login(newUser,custwin);
+    newUser=login(newUser,win);
 
-    wprintw(custwin[2],"111");
-    wrefresh(custwin[2]);
+    wprintw(win.foot,"111");
+    wrefresh(win.foot);
 
-    if(pthread_create(&listen,NULL, listenserver, (void *)custwin)!=0)
-        error(-1,0,"ERROR - Error creating thread");
+//    if(pthread_create(&listen,NULL, listenserver, (void *)custwin)!=0)
+//        error(-1,0,"ERROR - Error creating thread");
 
     while(running) {
-        wprintw(custwin[2],"bomber#>");
-        wscanw(custwin[2]," %1023[^\n]s", uinput);
-        wrefresh(custwin[2]);
+        wprintw(win.foot,"bomber#>");
+        wscanw(win.foot," %1023[^\n]s", uinput);
+        wrefresh(win.foot);
         arg_n = sscanf(uinput, "%s %s %s", args[0], args[1], args[2]);
 
         if (!strcmp(args[0], "exit"))
             running = 0;
     }
 
-    endncurses(custwin);
+    //endncurses(win.lwin, win.rwin, win.foot);
+    delwin(win.lwin);
+    delwin(win.rwin);
+    delwin(win.foot);
     gracefullexit();
 
     return (EXIT_SUCCESS);

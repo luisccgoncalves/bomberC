@@ -87,5 +87,11 @@ typedef struct{
     int     clientpid;
 }canary;
 
+typedef struct{
+    WINDOW *lwin;
+    WINDOW *rwin;
+    WINDOW *foot;
+}winl;
+
 
 #endif /* STRUCTS_H */
