@@ -39,7 +39,7 @@ void printhelp(){
 
 void printbomb(){
     wclear(custwin[1]);
-    wmove(custwin[1],5,1);
+    wmove(custwin[1],5,0);
     wprintw(custwin[1],"        ,--.!,\n");
     wprintw(custwin[1],"     __/   -*-\n");
     wprintw(custwin[1],"   ,d08b.  '|`\n");
@@ -61,7 +61,8 @@ void shutdown(){
 void start(level map){
 
     if (authDB.n_players<1){
-        printf("No players to start the game.\n");
+        wprintw(custwin[2],"No players to start the game.\n");
+        wrefresh(custwin[2]);
         return;
     }
 
@@ -104,13 +105,15 @@ void signal_handler(int signum){
 int add_user(char *user, char *passwd, db *usersdb, int i, char *filename){
 
     if(strchr(user,':')){
-        printf("Username can't contain the character ':'. Try again.\n");
+        wprintw(custwin[2],"Username can't contain the character ':'. Try again.\n");
+        wrefresh(custwin[2]);
         return i;
     }
 
     for(int n=0;n<=i;n++){
         if(!strcmp(user,usersdb[n].user)){
-            printf("Username already exists.\n");
+            wprintw(custwin[2],"Username already exists.\n");
+            wrefresh(custwin[2]);
             return i;
         }
     }
@@ -136,10 +139,13 @@ void list_users(bomber *player, int n_players){
 
     int i;
 
-    printf("USERS:\n");
+    wclear(custwin[1]);
+    wmove(custwin[1],5,1);
+    wprintw(custwin[1],"USERS:\n");
     for(i=0;i<n_players;i++)
-        printf("%d: %s\n", i+1, player[i].user);
+        wprintw(custwin[1],"%d: %s\n", i+1, player[i].user);
 
+    wrefresh(custwin[1]);
 }
 
 void kick(char *username){
@@ -147,14 +153,16 @@ void kick(char *username){
     char buffer[USR_TAM];
 
     if(!authDB.n_players) {
-        puts("No players logged in");
+        wprintw(custwin[2],"No players logged in");
+        wrefresh(custwin[2]);
         return;
     }
 
     for(i=0;i<authDB.n_players;i++)
         if(!strcmp(username,authDB.player[i].user)){
-            printf("Reason: ");
-            scanf(" %49[^\n]s",buffer);
+            wprintw(custwin[3],"Reason: ");
+            wscanw(custwin[3]," %49[^\n]s",buffer);
+            wrefresh(custwin[3]);
 
             header.structype=2;
 
@@ -164,24 +172,27 @@ void kick(char *username){
             return;
         }
 
-    printf("User %s is not logged in.\n", username);
+    wprintw(custwin[2],"User %s is not logged in.\n", username);
+    wrefresh(custwin[2]);
 
 }
 
 void print_game_info(){
 
     int i;
-
-    printf("\xc9\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbb\n");
-    printf("\xba Name\t\xba Points\t\xba\n");
-    printf("\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xce\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9\n");
+    wclear(custwin[1]);
+    wmove(custwin[1],5,0);
+    wprintw(custwin[1],"\t\xc9\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbb\n");
+    wprintw(custwin[1],"\t\xba Name\t\xba Pts\t\xba\n");
+    wprintw(custwin[1],"\t\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xce\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9\n");
 
     for(i=0;i<authDB.n_players;i++)
-        printf("\xba%s\t\xba %d\t\xba\n",
+        wprintw(custwin[1],"\t\xba%s\t\xba %d\t\xba\n",
                authDB.player[i].user,
                authDB.player[i].points);
 
-    printf("\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n");
+    wprintw(custwin[1],"\t\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n");
+    wrefresh(custwin[1]);
 }
 
 int load_file2db( char *filename, db *usersdb){
@@ -230,7 +241,8 @@ void userDeauth(user deauth){
 
     for(i=0;i<authDB.n_players;i++)
         if(authDB.player[i].pid==deauth.pid) {
-            printf("User %s logged out.\nbomber#>", authDB.player[i].user);
+            wprintw(custwin[2],"User %s logged out.\n", authDB.player[i].user);
+            wrefresh(custwin[2]);
             for(i;i<authDB.n_players;i++)
                 authDB.player[i]=authDB.player[i+1];
             authDB.n_players--;
@@ -257,7 +269,8 @@ void authclient(int clientpid){
         return;
     }
 
-    printf("User \"%s\" is attempting to login.\nbomber#>", newUser.user);
+    wprintw(custwin[2],"User \"%s\" is attempting to login.\n", newUser.user);
+    wrefresh(custwin[2]);
 
     sprintf(buffer,"%s_%d",C_PIPE,newUser.pid);
 
@@ -279,14 +292,15 @@ void authclient(int clientpid){
 
     authstatus=userAuth(newUser);
     if(authstatus>0) {     //If user authenticates
-        printf("User\"%s\" logged in.\nbomber#>", newUser.user);
+        wprintw(custwin[2],"User\"%s\" logged in.\n", newUser.user);
 
         strcpy(authDB.player[authDB.n_players].user,newUser.user);//User is now a player
         authDB.player[authDB.n_players].pid=newUser.pid;
 
         strcpy(authDB.player[authDB.n_players].pipename,buffer);
         authDB.player[authDB.n_players].points=0;
-        printf("Player \"%s\" created.\nbomber#>",authDB.player[authDB.n_players].user);
+        wprintw(custwin[2],"Player \"%s\" created.\n",authDB.player[authDB.n_players].user);
+        wrefresh(custwin[2]);
 
         newUser.pid=getpid();
         newUser.authOK=authstatus;
@@ -296,9 +310,11 @@ void authclient(int clientpid){
         return;
     }
     else if(authstatus<0)
-        printf("ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
+        wprintw(custwin[2],"ERROR: User \"%s\" is already logged.\nbomber#>", newUser.user);
     else
-        printf("User \"%s\" failed to login.\nbomber#>", newUser.user);
+        wprintw(custwin[2],"User \"%s\" failed to login.\nbomber#>", newUser.user);
+
+    wrefresh(custwin[2]);
 
     newUser.authOK=authstatus;
     write(authDB.player[authDB.n_players].fd,&newUser, sizeof(user));
@@ -382,7 +398,7 @@ int main(int argc, char** argv) {
     initncurses();
     custwin[1]=newwin(23,50,0,0);
     custwin[2]=newwin(23,30,0,51);
-    custwin[3]=newwin(7,80,24,0);
+    custwin[3]=newwin(6,80,24,0);
     wbkgd(custwin[1],COLOR_PAIR(1));
     wbkgd(custwin[2],COLOR_PAIR(2));
     wbkgd(custwin[3],COLOR_PAIR(2));
