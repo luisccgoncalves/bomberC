@@ -14,6 +14,15 @@
 #include "structs.h"
 #include "shared.c"
 
+void signal_handler(int signum){
+
+    if(signum==SIGINT){
+        endwin();
+        printf("Received SIGNAL %d\nSHUTTING DOWN.\n",signum);
+        exit(0);
+    }
+}
+
 level load_level(char *filename, level map, winl win){
 
     int fd;
@@ -59,25 +68,66 @@ void endncurses(winl *win){
     delwin(win->foot);
 }
 
-void print_lvl(level map, winl *win){
+void print_lvl(level *map, winl *win){
 
     int i, j, color;
 
     wclear(win->lwin);
     for(i=0;i<LVL_W;i++)
         for(j=0;j<LVL_H;j++) {
-            if(map.terrain[i][j]=='\xB1')
+            if(map->terrain[i][j]=='\xB1')
                 wattron(win->lwin,COLOR_PAIR(3));
-            else
-                color = 1;
 
-
-            wprintw(win->lwin,"%c", map.terrain[i][j]);
-            wrefresh(win->lwin);
+            wprintw(win->lwin,"%c", map->terrain[i][j]);
             wattroff(win->lwin,COLOR_PAIR(3));
         }
-    wrefresh(win->lwin);
-    wrefresh(win->rwin);
+}
+
+void print_user(bomber *player, level *map, winl *win){
+
+    mvwprintw(win->lwin,player->y_pos,player->x_pos,"%c",player->user[0]);
+}
+
+void startgame(bomber *player, level *map, winl *win){
+
+    int running=1, ch;
+    keypad(win->lwin, TRUE);
+    int prev[2];
+
+    while(running){
+        print_lvl(map,win);
+        print_user(player, map, win);
+
+        wrefresh(win->lwin);
+
+        ch=wgetch(win->lwin);
+
+        prev[0]=player->y_pos;
+        prev[1]=player->x_pos;
+
+        switch (ch){
+            case KEY_DOWN:
+                player->y_pos++;
+                break;
+            case KEY_UP:
+                player->y_pos--;
+                break;
+            case KEY_LEFT:
+                player->x_pos--;
+                break;
+            case KEY_RIGHT:
+                player->x_pos++;
+                break;
+            case 'q':
+                running=0;
+                break;
+        }
+        if((A_CHARTEXT & mvwinch(win->lwin,player->y_pos,player->x_pos))!=' '){
+            player->y_pos=prev[0];
+            player->x_pos=prev[1];
+        }
+
+    }
 }
 
 int main(int argc, char** argv) {
@@ -86,7 +136,18 @@ int main(int argc, char** argv) {
     int         running=1;
     level       map;
     winl        win;
-    int         ch;
+    bomber      player;
+
+    strcpy(player.user,"Luis");
+    player.x_pos=1;
+    player.y_pos=1;
+    player.n_bombs=5;
+    player.n_bobombs=2;
+    player.points=0;
+    player.pid=getpid();
+
+
+    signal(SIGINT, signal_handler);
 
     initncurses();
     win.lwin=newwin(23,49,1,1);
@@ -102,8 +163,7 @@ int main(int argc, char** argv) {
     map=load_level(DEFLVL_PATH, map, win);
 
 
-    print_lvl(map, &win);
-    ch=wgetch(win.lwin);
+    startgame(&player, &map, &win);
 
 
     endncurses(&win);
