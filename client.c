@@ -95,12 +95,22 @@ void openpipe(char *pipename){
 
 void print_lvl(level map, winl *win){
 
-    int i,j;
+    int i, j, color;
+
     wclear(win->lwin);
     for(i=0;i<LVL_W;i++)
-        for(j=0;j<LVL_H;j++)
-            wprintw(win->lwin,"%c",map.terrain[i][j]);
+        for(j=0;j<LVL_H;j++) {
+            if(map.terrain[i][j]=='\xB0')
+                color = 3;
+            else
+                color = 1;
+
+            //attron(COLOR_PAIR(color));
+            waddch(win->lwin, map.terrain[i][j]);
+            wrefresh(win->lwin);
+        }
     wrefresh(win->lwin);
+    wrefresh(win->rwin);
 }
 
 user login(user newUser, winl win){
@@ -222,12 +232,12 @@ int main(int argc, char** argv) {
     winl        win;
 
     initncurses();
-    win.lwin=newwin(22,49,1,1);
-    win.rwin=newwin(22,27,1,51);
+    win.lwin=newwin(23,49,1,1);
+    win.rwin=newwin(23,27,1,51);
     win.foot=newwin(6,78,24,1);
     wbkgd(win.lwin,COLOR_PAIR(1));
-    wbkgd(win.rwin,COLOR_PAIR(3));
-    wbkgd(win.foot,COLOR_PAIR(4));
+    wbkgd(win.rwin,COLOR_PAIR(2));
+    wbkgd(win.foot,COLOR_PAIR(2));
     scrollok(win.rwin,TRUE);
     scrollok(win.foot,TRUE);
 
