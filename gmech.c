@@ -66,14 +66,15 @@ void print_lvl(level map, winl *win){
     wclear(win->lwin);
     for(i=0;i<LVL_W;i++)
         for(j=0;j<LVL_H;j++) {
-            if(map.terrain[i][j]=='\xB0')
-                color = 3;
+            if(map.terrain[i][j]=='\xB1')
+                wattron(win->lwin,COLOR_PAIR(3));
             else
                 color = 1;
 
-            attron(color);
+
             wprintw(win->lwin,"%c", map.terrain[i][j]);
             wrefresh(win->lwin);
+            wattroff(win->lwin,COLOR_PAIR(3));
         }
     wrefresh(win->lwin);
     wrefresh(win->rwin);
@@ -99,6 +100,7 @@ int main(int argc, char** argv) {
     refreshall(&win);
 
     map=load_level(DEFLVL_PATH, map, win);
+
 
     print_lvl(map, &win);
     ch=wgetch(win.lwin);
