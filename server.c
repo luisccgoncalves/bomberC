@@ -346,6 +346,7 @@ void *listenclients(void *ptr){
 
         read(authDB.sPipeFd, &header, sizeof(header));
 
+
         switch (header.structype){
 
             case -1: //this kills the thread

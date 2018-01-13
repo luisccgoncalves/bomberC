@@ -63,7 +63,7 @@ void *activewait(void *ptr){
     while(ServerPID==0){
         if(access(S_PIPE, F_OK)==-1) { //If pipe isn't created, server is offline
             gracefullexit();
-            error(-1, 0, "ERROR - Server is offline");
+            throwerror("ERROR - Server is offline");
         }
         sleep(5);
     }
@@ -73,22 +73,22 @@ void openpipe(char *pipename){
 
     if(access(pipename, F_OK)==-1)
         if(!strcmp(S_PIPE,pipename))    //If server pipe isn't created, quits
-            error(-1, 0, "ERROR - Server is offline");
+            throwerror("ERROR - Server is offline");
 
         else if(mkfifo(pipename, 0666)<0) //If client pipe isn't created, create it
-            error(-1,0,"ERROR - Could not create pipe.");
+            throwerror("ERROR - Could not create pipe.");
 
     if(!strcmp(S_PIPE,pipename)){
 
         sPipeFd=open(pipename,O_RDWR);
         if(sPipeFd<0)
-            error(-1,0,"ERROR - Could not open pipe.");
+            throwerror("ERROR - Could not open pipe.");
     }
     else {
 
         cPipeFd=open(pipename, O_RDWR);
         if(cPipeFd<0)
-            error(-1,0,"ERROR - Could not open pipe.");
+            throwerror("ERROR - Could not open pipe.");
     }
 
 }
@@ -113,18 +113,19 @@ void print_lvl(level map, winl *win){
     wrefresh(win->rwin);
 }
 
-user login(user newUser, winl win){
+void login(winl *win){
 
-    canary header;
+    canary  header;
+    user    newUser;
     newUser.authOK=0;
-    wprintw(win.foot,"bomberC\nPlease login.\n");
+    wprintw(win->foot,"bomberC\nPlease login.\n");
     while(newUser.authOK<=0){
-        wprintw(win.foot,"user:");
-        wscanw(win.foot," %49[^\n]s",newUser.user);
-        wrefresh(win.foot);
-        wprintw(win.foot,"pass:");
-        wscanw(win.foot," %49[^\n]s",newUser.passwd);
-        wrefresh(win.foot);
+        wprintw(win->foot,"user:");
+        wscanw(win->foot," %49[^\n]s",newUser.user);
+        wrefresh(win->foot);
+        wprintw(win->foot,"pass:");
+        wscanw(win->foot," %49[^\n]s",newUser.passwd);
+        wrefresh(win->foot);
 
         header.clientpid=getpid();
         newUser.pid=getpid();
@@ -134,55 +135,51 @@ user login(user newUser, winl win){
         write(sPipeFd, &newUser, sizeof(user));
 
         read(cPipeFd,&newUser,sizeof(user));
+
         ServerPID=newUser.pid;
 
         if(newUser.authOK<1) {
-            wprintw(win.foot, "Wrong username or password.\n");
-            wrefresh(win.foot);
+            wprintw(win->foot, "Wrong username or password.\n");
+            wrefresh(win->foot);
         }
         else if (newUser.authOK==3) {
-            wprintw(win.foot,"Server is full.\n");
-            wrefresh(win.foot);
+            wprintw(win->foot,"Server is full.\n");
+            wrefresh(win->foot);
             gracefullexit();
             exit(0);
         }
         else {
-            wprintw(win.rwin, "Welcome %s.\n", newUser.user);
-            wrefresh(win.rwin);
+            wprintw(win->rwin, "Welcome %s.\n", newUser.user);
+            wrefresh(win->rwin);
         }
     }
-    return newUser;
 }
 
-void kicked(void *ptr){
+void kicked(pmw *data){
 
     char buffer[USR_TAM];
 
-    winl *win= (winl *)ptr;
-
     read(cPipeFd, &buffer, sizeof(buffer));
-    wprintw(win->foot,"\nYou got kicked!\nReason: %s\nQuitting in 5 seconds.\n",buffer);
-    wrefresh(win->foot);
+    wprintw(data->win.foot,"\nYou got kicked!\nReason: %s\nQuitting in 5 seconds.\n",buffer);
+    wrefresh(data->win.foot);
     sleep(5);
     gracefullexit();
     exit(0);
 }
 
-void start_game(winl *win){
+void start_game(pmw *data){
 
-    level map;
+    read(cPipeFd, &data->map, sizeof(level));
 
-    read(cPipeFd, &map, sizeof(level));
-
-    wprintw(win->foot,"Starting game.\n");
-    wrefresh(win->foot);
-    print_lvl(map, win);
+    wprintw(data->win.foot,"Starting game.\n");
+    wrefresh(data->win.foot);
+    print_lvl(data->map, &data->win);
 
 }
 
 void *listenserver(void *ptr){
 
-    //No need to cast ptr, this function will only pass it through
+    pmw *data=(pmw *)ptr;
     canary header;
     header.structype=1;
 
@@ -197,10 +194,10 @@ void *listenserver(void *ptr){
             case 1:  //not used
                 break;
             case 2:  //client will receive kick reason
-                kicked(ptr);
+                kicked(data);
                 break;
             case 3:  //client will receive map and start the game
-                start_game(ptr);
+                start_game(data);
 
         }
     }
@@ -222,56 +219,54 @@ void endncurses(winl *win){
 
 int main(int argc, char** argv) {
 
-    user        newUser;
+    //user        newUser;
     int         running=1;
     int         arg_n;              //Custom shell argc equivalent
     char        uinput[USR_LINE];
     char        args[3][USR_TAM];   //Custom shell argv equivalent
     char        buffer[USR_TAM];
     pthread_t   keepalive, listen;
-    winl        win;
+    pmw         data;
 
     initncurses();
-    win.lwin=newwin(23,49,1,1);
-    win.rwin=newwin(23,27,1,51);
-    win.foot=newwin(6,78,24,1);
-    wbkgd(win.lwin,COLOR_PAIR(1));
-    wbkgd(win.rwin,COLOR_PAIR(2));
-    wbkgd(win.foot,COLOR_PAIR(2));
-    scrollok(win.rwin,TRUE);
-    scrollok(win.foot,TRUE);
+    data.win.lwin=newwin(23,49,1,1);
+    data.win.rwin=newwin(23,27,1,51);
+    data.win.foot=newwin(6,78,24,1);
+    wbkgd(data.win.lwin,COLOR_PAIR(1));
+    wbkgd(data.win.rwin,COLOR_PAIR(2));
+    wbkgd(data.win.foot,COLOR_PAIR(2));
+    scrollok(data.win.rwin,TRUE);
+    scrollok(data.win.foot,TRUE);
 
-    refreshall(&win);
-
+    refreshall(&data.win);
 
     setbuf(stdout, NULL);
     signal(SIGINT, signal_handler);
 
     if(pthread_create(&keepalive,NULL, activewait, NULL)!=0)
-        error(-1,0,"ERROR - Error creating thread");
-
+        throwerror("ERROR - Error creating thread");
 
     openpipe(S_PIPE);    //Open Server Pipe
 
     sprintf(buffer,"%s_%d",C_PIPE,getpid());
     openpipe(buffer);    //Open Client Pipe
 
-    newUser=login(newUser,win);
+    login(&data.win);
 
-    if(pthread_create(&listen,NULL, listenserver, (void *)&win)!=0)
-        error(-1,0,"ERROR - Error creating thread");
+    if(pthread_create(&listen,NULL, listenserver, (void *)&data)!=0)
+        throwerror("ERROR - Error creating thread");
 
     while(running) {
-        wprintw(win.foot,"bomber#>");
-        wscanw(win.foot," %1023[^\n]s", uinput);
-        wrefresh(win.foot);
+        wprintw(data.win.foot,"bomber#>");
+        wscanw(data.win.foot," %1023[^\n]s", uinput);
+        wrefresh(data.win.foot);
         arg_n = sscanf(uinput, "%s %s %s", args[0], args[1], args[2]);
 
         if (!strcmp(args[0], "exit"))
             running = 0;
     }
 
-    endncurses(&win);
+    endncurses(&data.win);
 
     gracefullexit();
 

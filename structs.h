@@ -93,5 +93,12 @@ typedef struct{
     WINDOW *foot;
 }winl;
 
+typedef struct{
+    bomber  player;
+    level   map;
+    winl    win;
+}pmw;
+
+void gracefullexit();
 
 #endif /* STRUCTS_H */
