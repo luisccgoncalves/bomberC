@@ -345,8 +345,6 @@ void *listenclients(void *ptr){
     while(header.structype!=-1) {
 
         read(authDB.sPipeFd, &header, sizeof(header));
-        wprintw(custwin[1],"%d",header.clientpid);
-        wrefresh(custwin[1]);
 
         switch (header.structype){
 
@@ -504,7 +502,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    gracefullexit(authDB.sPipeFd);
+    gracefullexit();
 
     pthread_join(listen, NULL);
 

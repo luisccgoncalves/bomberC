@@ -113,14 +113,7 @@ user login(winl *win, user newUser){
         write(sPipeFd, &header, sizeof(header));
         write(sPipeFd, &newUser, sizeof(user));
 
-        wprintw(win->foot,"%s\n",newUser.user);
-        wprintw(win->foot,"%d",newUser.pid);
-        wrefresh(win->foot);
-
         read(cPipeFd,&newUser,sizeof(user));
-
-        wprintw(win->foot,"batastas");
-        wrefresh(win->foot);
 
         ServerPID=newUser.pid;
 
@@ -316,7 +309,7 @@ int main(int argc, char** argv) {
     if(pthread_create(&listen,NULL, listenserver, (void *)&data)!=0)
         throwerror("ERROR - Error creating thread");
 
-    //initplayer(&data.player,&newUser);
+    initplayer(&data.player,&newUser);
 
     while(running) {
         wprintw(data.win.foot,"bomber#>");
