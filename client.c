@@ -93,30 +93,9 @@ void openpipe(char *pipename){
 
 }
 
-void print_lvl(level map, winl *win){
-
-    int i, j, color;
-
-    wclear(win->lwin);
-    for(i=0;i<LVL_W;i++)
-        for(j=0;j<LVL_H;j++) {
-            if(map.terrain[i][j]=='\xB0')
-                color = 3;
-            else
-                color = 1;
-
-            //attron(COLOR_PAIR(color));
-            waddch(win->lwin, map.terrain[i][j]);
-            wrefresh(win->lwin);
-        }
-    wrefresh(win->lwin);
-    wrefresh(win->rwin);
-}
-
-void login(winl *win){
+user login(winl *win, user newUser){
 
     canary  header;
-    user    newUser;
     newUser.authOK=0;
     wprintw(win->foot,"bomberC\nPlease login.\n");
     while(newUser.authOK<=0){
@@ -134,7 +113,14 @@ void login(winl *win){
         write(sPipeFd, &header, sizeof(header));
         write(sPipeFd, &newUser, sizeof(user));
 
+        wprintw(win->foot,"%s\n",newUser.user);
+        wprintw(win->foot,"%d",newUser.pid);
+        wrefresh(win->foot);
+
         read(cPipeFd,&newUser,sizeof(user));
+
+        wprintw(win->foot,"batastas");
+        wrefresh(win->foot);
 
         ServerPID=newUser.pid;
 
@@ -167,14 +153,76 @@ void kicked(pmw *data){
     exit(0);
 }
 
-void start_game(pmw *data){
+void print_lvl(level *map, winl *win){
 
-    read(cPipeFd, &data->map, sizeof(level));
+    int i, j;
 
-    wprintw(data->win.foot,"Starting game.\n");
-    wrefresh(data->win.foot);
-    print_lvl(data->map, &data->win);
+    wclear(win->lwin);
 
+    for(i=0;i<LVL_W;i++)
+        for(j=0;j<LVL_H;j++) {
+            if(map->terrain[i][j]=='\xB1')
+                wattron(win->lwin,COLOR_PAIR(3));
+
+            wprintw(win->lwin,"%c", map->terrain[i][j]);
+            wattroff(win->lwin,COLOR_PAIR(3));
+        }
+}
+
+void print_user(bomber *player, level *map, winl *win){
+
+    mvwprintw(win->lwin,player->y_pos,player->x_pos,"%c",player->user[0]);
+}
+
+void startgame(bomber *player, level *map, winl *win){
+
+    int running=1, ch;
+    keypad(win->lwin, TRUE);
+    int prev[2];
+
+    read(cPipeFd, map, sizeof(level));
+
+    wclear(win->lwin);
+
+    wprintw(win->lwin,"%s",map->terrain);
+    wrefresh(win->lwin);
+
+    while(running){
+
+        print_lvl(map,win);
+        wrefresh(win->lwin);
+        print_user(player, map, win);
+
+        wrefresh(win->lwin);
+
+        ch=wgetch(win->lwin);
+
+        prev[0]=player->y_pos;
+        prev[1]=player->x_pos;
+
+        switch (ch){
+            case KEY_DOWN:
+                player->y_pos++;
+                break;
+            case KEY_UP:
+                player->y_pos--;
+                break;
+            case KEY_LEFT:
+                player->x_pos--;
+                break;
+            case KEY_RIGHT:
+                player->x_pos++;
+                break;
+            case 'q':
+                running=0;
+                break;
+        }
+        if((A_CHARTEXT & mvwinch(win->lwin,player->y_pos,player->x_pos))!=' '){
+            player->y_pos=prev[0];
+            player->x_pos=prev[1];
+        }
+
+    }
 }
 
 void *listenserver(void *ptr){
@@ -197,7 +245,7 @@ void *listenserver(void *ptr){
                 kicked(data);
                 break;
             case 3:  //client will receive map and start the game
-                start_game(data);
+                startgame(&data->player, &data->map, &data->win);
 
         }
     }
@@ -217,9 +265,22 @@ void endncurses(winl *win){
     delwin(win->foot);
 }
 
+void initplayer(bomber *player, user *newUser){
+
+    player->y_pos=1;
+    player->x_pos=1;
+    player->points=0;
+    player->n_bobombs=5;
+    player->n_bombs=5;
+    player->pid=getpid();
+    player->fd=cPipeFd;
+    strcpy(player->user,newUser->user);
+
+}
+
 int main(int argc, char** argv) {
 
-    //user        newUser;
+    user        newUser;
     int         running=1;
     int         arg_n;              //Custom shell argc equivalent
     char        uinput[USR_LINE];
@@ -237,7 +298,6 @@ int main(int argc, char** argv) {
     wbkgd(data.win.foot,COLOR_PAIR(2));
     scrollok(data.win.rwin,TRUE);
     scrollok(data.win.foot,TRUE);
-
     refreshall(&data.win);
 
     setbuf(stdout, NULL);
@@ -251,10 +311,12 @@ int main(int argc, char** argv) {
     sprintf(buffer,"%s_%d",C_PIPE,getpid());
     openpipe(buffer);    //Open Client Pipe
 
-    login(&data.win);
+    newUser=login(&data.win,newUser);
 
     if(pthread_create(&listen,NULL, listenserver, (void *)&data)!=0)
         throwerror("ERROR - Error creating thread");
+
+    //initplayer(&data.player,&newUser);
 
     while(running) {
         wprintw(data.win.foot,"bomber#>");
